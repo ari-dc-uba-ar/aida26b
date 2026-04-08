@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión Académica - Faculty of Exact Sciences</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .nav {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .nav button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .nav button:hover {
+            background-color: #0056b3;
+        }
+        .nav button.active {
+            background-color: #0056b3;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
+        button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .edit-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        .add-btn {
+            background-color: #007bff;
+            color: white;
+            margin-bottom: 20px;
+        }
+        form {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .cancel-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sistema de Gestión Académica / Academic Management System</h1>
+        
+        <nav class="nav">
+            <button id="students-btn" class="active">Alumnos / Students</button>
+            <button id="subjects-btn">Materias / Subjects</button>
+            <button id="enrollments-btn">Inscripciones / Enrollments</button>
+        </nav>
+
+        <div id="students-section" class="section active">
+            <h2>Alumnos / Students</h2>
+            <button id="add-student-btn" class="add-btn">Agregar Alumno / Add Student</button>
+            <div id="students-form" style="display: none;"></div>
+            <table id="students-table">
+                <thead>
+                    <tr>
+                        <th>Número de Libreta / Student ID</th>
+                        <th>Nombre / First Name</th>
+                        <th>Apellido / Last Name</th>
+                        <th>Email</th>
+                        <th>Fecha de Inscripción / Enrollment Date</th>
+                        <th>Estado / Status</th>
+                        <th>Acciones / Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="subjects-section" class="section">
+            <h2>Materias / Subjects</h2>
+            <button id="add-subject-btn" class="add-btn">Agregar Materia / Add Subject</button>
+            <div id="subjects-form" style="display: none;"></div>
+            <table id="subjects-table">
+                <thead>
+                    <tr>
+                        <th>Código / Code</th>
+                        <th>Nombre / Name</th>
+                        <th>Descripción / Description</th>
+                        <th>Créditos / Credits</th>
+                        <th>Departamento / Department</th>
+                        <th>Acciones / Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="enrollments-section" class="section">
+            <h2>Inscripciones / Enrollments</h2>
+            <button id="add-enrollment-btn" class="add-btn">Agregar Inscripción / Add Enrollment</button>
+            <div id="enrollments-form" style="display: none;"></div>
+            <table id="enrollments-table">
+                <thead>
+                    <tr>
+                        <th>Número de Libreta / Student ID</th>
+                        <th>Nombre del Alumno / Student Name</th>
+                        <th>Código de Materia / Subject Code</th>
+                        <th>Nombre de Materia / Subject Name</th>
+                        <th>Fecha de Inscripción / Enrollment Date</th>
+                        <th>Nota / Grade</th>
+                        <th>Estado / Status</th>
+                        <th>Acciones / Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
