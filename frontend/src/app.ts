@@ -35,7 +35,7 @@ const structure = {
       pk: 'cod_mat',
       uiName: 'Subject'
     }
-  }
+  },
 }
 
 // Type definitions
@@ -89,40 +89,44 @@ const studentsTable = document.getElementById('students-table') as HTMLTableElem
 const subjectsTable = document.getElementById('subjects-table') as HTMLTableElement;
 const enrollmentsTable = document.getElementById('enrollments-table') as HTMLTableElement;
 
+
+class SectionManager {
+  private sections: Record<string, { btn: HTMLElement; section: HTMLElement; loader: () => void }> = {};
+
+  constructor() {
+    this.registerSection('students', studentsBtn, studentsSection, loadStudents);
+    this.registerSection('subjects', subjectsBtn, subjectsSection, loadSubjects);
+    this.registerSection('enrollments', enrollmentsBtn, enrollmentsSection, loadEnrollments);
+  }
+
+  registerSection(name: string, btn: HTMLElement, section: HTMLElement, loader: () => void) {
+    this.sections[name] = { btn, section, loader };
+  }
+
+  show(sectionName: string) {
+    Object.values(this.sections).forEach(({ btn, section }) => {
+      btn.classList.remove('active');
+      section.classList.remove('active');
+    });
+
+    const selected = this.sections[sectionName];
+    if (selected) {
+      selected.btn.classList.add('active');
+      selected.section.classList.add('active');
+      selected.loader();
+    }
+  }
+}
+
+const sectionManager = new SectionManager();
+
 // Navigation
-studentsBtn.addEventListener('click', () => showSection('students'));
-subjectsBtn.addEventListener('click', () => showSection('subjects'));
-enrollmentsBtn.addEventListener('click', () => showSection('enrollments'));
+studentsBtn.addEventListener('click', () => sectionManager.show('students'));
+subjectsBtn.addEventListener('click', () => sectionManager.show('subjects'));
+enrollmentsBtn.addEventListener('click', () => sectionManager.show('enrollments'));
 
 function showSection(section: string) {
-  // Hide all sections
-  studentsSection.classList.remove('active');
-  subjectsSection.classList.remove('active');
-  enrollmentsSection.classList.remove('active');
-
-  // Remove active class from buttons
-  studentsBtn.classList.remove('active');
-  subjectsBtn.classList.remove('active');
-  enrollmentsBtn.classList.remove('active');
-
-  // Show selected section
-  switch (section) {
-    case 'students':
-      studentsSection.classList.add('active');
-      studentsBtn.classList.add('active');
-      loadStudents();
-      break;
-    case 'subjects':
-      subjectsSection.classList.add('active');
-      subjectsBtn.classList.add('active');
-      loadSubjects();
-      break;
-    case 'enrollments':
-      enrollmentsSection.classList.add('active');
-      enrollmentsBtn.classList.add('active');
-      loadEnrollments();
-      break;
-  }
+  sectionManager.show(section);
 }
 
 // Load data functions
