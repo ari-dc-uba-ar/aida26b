@@ -3,37 +3,78 @@
 
 const API_BASE = '/api';
 
+type ColumnDef = {
+  type: string;
+  label?: string;
+  inputType?: string;
+  required?: boolean;
+  options?: { value: string; label: string }[];
+  step?: string;
+  parseAs?: 'int' | 'float';
+}
+
 type TableStructure = {
-  columns: Record<string, {type:string}>
-  pk: string
+  columns: Record<string, ColumnDef>
+  pk: string | string[]
   uiName: string
+  apiPath: string
+  editTitle: string
+  addTitle: string
 }
 
 const structure = {
   tables: {
     students: {
       columns:{
-        numero_libreta   :{type: 'string', label: "Número de Libreta / Student ID:"},
-        dni              :{type: 'string'},
-        first_name       :{type: 'string'},
-        last_name        :{type: 'string'},
-        email            :{type: 'string'},
-        enrollment_date  :{type: 'string'},
-        status           :{type: 'string'},
+        numero_libreta: {type: 'string', label: 'Número de Libreta / Student ID:', inputType: 'text', required: true},
+        dni:            {type: 'string', label: 'DNI / ID Number:', inputType: 'text', required: true},
+        first_name:     {type: 'string', label: 'Nombre / First Name:', inputType: 'text', required: true},
+        last_name:      {type: 'string', label: 'Apellido / Last Name:', inputType: 'text', required: true},
+        email:          {type: 'string', label: 'Email:', inputType: 'email'},
+        enrollment_date:{type: 'string', label: 'Fecha de Inscripción / Enrollment Date:', inputType: 'date'},
+        status:         {type: 'string', label: 'Estado / Status:', inputType: 'select', options: [
+          {value: 'active', label: 'Activo / Active'},
+          {value: 'graduated', label: 'Graduado / Graduated'},
+          {value: 'interrupted', label: 'Interrumpido / Interrupted'},
+        ]},
       },
       pk: 'numero_libreta',
-      uiName: 'Student'
+      uiName: 'Student',
+      apiPath: 'students',
+      editTitle: 'Editar Alumno / Edit Student',
+      addTitle: 'Agregar Alumno / Add Student',
     },
     subject: {
       columns:{
-        cod_mat     :{type: 'string'},
-        name        :{type: 'string'},
-        description :{type: 'string'},
-        credits     :{type: 'string'},
-        department  :{type: 'string'},
+        cod_mat:     {type: 'string', label: 'Código / Code:', inputType: 'text', required: true},
+        name:        {type: 'string', label: 'Nombre / Name:', inputType: 'text', required: true},
+        description: {type: 'string', label: 'Descripción / Description:', inputType: 'textarea'},
+        credits:     {type: 'string', label: 'Créditos / Credits:', inputType: 'number', parseAs: 'int' as const},
+        department:  {type: 'string', label: 'Departamento / Department:', inputType: 'text'},
       },
       pk: 'cod_mat',
-      uiName: 'Subject'
+      uiName: 'Subject',
+      apiPath: 'subjects',
+      editTitle: 'Editar Materia / Edit Subject',
+      addTitle: 'Agregar Materia / Add Subject',
+    },
+    enrollments: {
+      columns:{
+        numero_libreta: {type: 'string', label: 'Número de Libreta / Student ID:', inputType: 'text', required: true},
+        cod_mat:        {type: 'string', label: 'Código de Materia / Subject Code:', inputType: 'text', required: true},
+        enrollment_date:{type: 'string', label: 'Fecha de Inscripción / Enrollment Date:', inputType: 'date', required: true},
+        grade:          {type: 'string', label: 'Nota / Grade:', inputType: 'number', step: '0.01', parseAs: 'float' as const},
+        status:         {type: 'string', label: 'Estado / Status:', inputType: 'select', options: [
+          {value: 'enrolled', label: 'Inscrito / Enrolled'},
+          {value: 'completed', label: 'Completado / Completed'},
+          {value: 'failed', label: 'Fallido / Failed'},
+        ]},
+      },
+      pk: ['numero_libreta', 'cod_mat'],
+      uiName: 'Enrollment',
+      apiPath: 'enrollments',
+      editTitle: 'Editar Inscripción / Edit Enrollment',
+      addTitle: 'Agregar Inscripción / Add Enrollment',
     }
   }
 }
@@ -161,16 +202,17 @@ function renderAnyTable(tableElement: HTMLTableElement, tableStructure: TableStr
   tbody.innerHTML = '';
 
   records.forEach(record => {
-    const {pk, uiName} = tableStructure;
-    const pkValue = encodeURIComponent(record[pk]);
+    const {uiName} = tableStructure;
+    const pks = Array.isArray(tableStructure.pk) ? tableStructure.pk : [tableStructure.pk];
+    const pkArgs = pks.map(k => `'${encodeURIComponent(record[k])}'`).join(', ');
     const row = document.createElement('tr');
-    row.innerHTML = 
+    row.innerHTML =
       Object.entries(tableStructure.columns).map(([name]) => `<td>${record[name] || ''}</td>`).join('')
       +
     `
       <td class="actions">
-        <button class="edit-btn" onclick="edit${uiName}('${pkValue}')">Editar / Edit</button>
-        <button class="delete-btn" onclick="delete${uiName}('${pkValue}')">Eliminar / Delete</button>
+        <button class="edit-btn" onclick="edit${uiName}(${pkArgs})">Editar / Edit</button>
+        <button class="delete-btn" onclick="delete${uiName}(${pkArgs})">Eliminar / Delete</button>
       </td>
     `;
     tbody.appendChild(row);
@@ -214,86 +256,104 @@ addStudentBtn.addEventListener('click', () => showStudentForm());
 addSubjectBtn.addEventListener('click', () => showSubjectForm());
 addEnrollmentBtn.addEventListener('click', () => showEnrollmentForm());
 
-function showStudentForm(student?: Student) {
-  const isEdit = !!student;
-  studentsForm.innerHTML = `
-    <form id="student-form">
-      <h3>${isEdit ? 'Editar Alumno / Edit Student' : 'Agregar Alumno / Add Student'}</h3>
+function showAnyForm(
+  tableStruct: TableStructure,
+  formContainer: HTMLElement,
+  entity: Record<string, any> | undefined,
+  loadData: () => void
+) {
+  const isEdit = !!entity;
+  const pks = Array.isArray(tableStruct.pk) ? tableStruct.pk : [tableStruct.pk];
+
+  const fieldsHtml = Object.entries(tableStruct.columns).map(([name, col]) => {
+    const value = entity?.[name] ?? '';
+    const isPk = pks.includes(name);
+    const readonly = isEdit && isPk ? 'readonly' : '';
+    const required = col.required ? 'required' : '';
+
+    if (col.inputType === 'select' && col.options) {
+      const optionsHtml = col.options.map(opt =>
+        `<option value="${opt.value}" ${entity?.[name] === opt.value ? 'selected' : ''}>${opt.label}</option>`
+      ).join('');
+      return `
       <div class="form-group">
-        <label for="numero_libreta">Número de Libreta / Student ID:</label>
-        <input type="text" id="numero_libreta" value="${student?.numero_libreta || ''}" ${isEdit ? 'readonly' : ''} required>
-      </div>
+        <label for="${name}">${col.label}</label>
+        <select id="${name}">${optionsHtml}</select>
+      </div>`;
+    }
+    if (col.inputType === 'textarea') {
+      return `
       <div class="form-group">
-        <label for="dni">DNI / ID Number:</label>
-        <input type="text" id="dni" value="${student?.dni || ''}" required>
-      </div>
+        <label for="${name}">${col.label}</label>
+        <textarea id="${name}">${value}</textarea>
+      </div>`;
+    }
+    const step = col.step ? ` step="${col.step}"` : '';
+    const inputType = col.inputType || 'text';
+    return `
       <div class="form-group">
-        <label for="first_name">Nombre / First Name:</label>
-        <input type="text" id="first_name" value="${student?.first_name || ''}" required>
-      </div>
-      <div class="form-group">
-        <label for="last_name">Apellido / Last Name:</label>
-        <input type="text" id="last_name" value="${student?.last_name || ''}" required>
-      </div>
-      <div class="form-group">
-        <label for="email">Email:</label>
-        <input type="email" id="email" value="${student?.email || ''}">
-      </div>
-      <div class="form-group">
-        <label for="enrollment_date">Fecha de Inscripción / Enrollment Date:</label>
-        <input type="date" id="enrollment_date" value="${student?.enrollment_date || ''}">
-      </div>
-      <div class="form-group">
-        <label for="status">Estado / Status:</label>
-        <select id="status">
-          <option value="active" ${student?.status === 'active' ? 'selected' : ''}>Activo / Active</option>
-          <option value="graduated" ${student?.status === 'graduated' ? 'selected' : ''}>Graduado / Graduated</option>
-          <option value="interrupted" ${student?.status === 'interrupted' ? 'selected' : ''}>Interrumpido / Interrupted</option>
-        </select>
-      </div>
+        <label for="${name}">${col.label}</label>
+        <input type="${inputType}" id="${name}" value="${value}" ${readonly} ${required}${step}>
+      </div>`;
+  }).join('');
+
+  formContainer.innerHTML = `
+    <form id="edit-form">
+      <h3>${isEdit ? tableStruct.editTitle : tableStruct.addTitle}</h3>
+      ${fieldsHtml}
       <div class="form-actions">
         <button type="submit">${isEdit ? 'Actualizar / Update' : 'Agregar / Add'}</button>
-        <button type="button" class="cancel-btn" onclick="hideStudentForm()">Cancelar / Cancel</button>
+        <button type="button" class="cancel-btn" id="cancel-btn">Cancelar / Cancel</button>
       </div>
     </form>
   `;
 
-  studentsForm.style.display = 'block';
+  formContainer.style.display = 'block';
 
-  const form = document.getElementById('student-form') as HTMLFormElement;
+  document.getElementById('cancel-btn')!.addEventListener('click', () => {
+    formContainer.style.display = 'none';
+  });
+
+  const form = document.getElementById('edit-form') as HTMLFormElement;
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const formData = new FormData(form);
-    const studentData = {
-      numero_libreta: (document.getElementById('numero_libreta') as HTMLInputElement).value,
-      dni: (document.getElementById('dni') as HTMLInputElement).value,
-      first_name: (document.getElementById('first_name') as HTMLInputElement).value,
-      last_name: (document.getElementById('last_name') as HTMLInputElement).value,
-      email: (document.getElementById('email') as HTMLInputElement).value,
-      enrollment_date: (document.getElementById('enrollment_date') as HTMLInputElement).value,
-      status: (document.getElementById('status') as HTMLSelectElement).value,
-    };
+    const data: Record<string, any> = {};
+    Object.entries(tableStruct.columns).forEach(([name, col]) => {
+      const el = document.getElementById(name) as HTMLInputElement;
+      if (col.parseAs === 'int') {
+        data[name] = parseInt(el.value) || 0;
+      } else if (col.parseAs === 'float') {
+        data[name] = parseFloat(el.value) || null;
+      } else {
+        data[name] = el.value;
+      }
+    });
 
+    const pkPath = pks.map(k => encodeURIComponent(data[k])).join('/');
     try {
       if (isEdit) {
-        await fetch(`${API_BASE}/students/${studentData.numero_libreta}`, {
+        await fetch(`${API_BASE}/${tableStruct.apiPath}/${pkPath}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(studentData),
+          body: JSON.stringify(data),
         });
       } else {
-        await fetch(`${API_BASE}/students`, {
+        await fetch(`${API_BASE}/${tableStruct.apiPath}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(studentData),
+          body: JSON.stringify(data),
         });
       }
-      hideStudentForm();
-      loadStudents();
+      formContainer.style.display = 'none';
+      loadData();
     } catch (error) {
-      console.error('Error saving student:', error);
+      console.error(`Error saving ${tableStruct.uiName.toLowerCase()}:`, error);
     }
   });
+}
+
+function showStudentForm(student?: Student) {
+  showAnyForm(structure.tables.students, studentsForm, student, loadStudents);
 }
 
 function hideStudentForm() {
@@ -301,70 +361,7 @@ function hideStudentForm() {
 }
 
 function showSubjectForm(subject?: Subject) {
-  const isEdit = !!subject;
-  subjectsForm.innerHTML = `
-    <form id="subject-form">
-      <h3>${isEdit ? 'Editar Materia / Edit Subject' : 'Agregar Materia / Add Subject'}</h3>
-      <div class="form-group">
-        <label for="cod_mat">Código / Code:</label>
-        <input type="text" id="cod_mat" value="${subject?.cod_mat || ''}" ${isEdit ? 'readonly' : ''} required>
-      </div>
-      <div class="form-group">
-        <label for="name">Nombre / Name:</label>
-        <input type="text" id="name" value="${subject?.name || ''}" required>
-      </div>
-      <div class="form-group">
-        <label for="description">Descripción / Description:</label>
-        <textarea id="description">${subject?.description || ''}</textarea>
-      </div>
-      <div class="form-group">
-        <label for="credits">Créditos / Credits:</label>
-        <input type="number" id="credits" value="${subject?.credits || ''}">
-      </div>
-      <div class="form-group">
-        <label for="department">Departamento / Department:</label>
-        <input type="text" id="department" value="${subject?.department || ''}">
-      </div>
-      <div class="form-actions">
-        <button type="submit">${isEdit ? 'Actualizar / Update' : 'Agregar / Add'}</button>
-        <button type="button" class="cancel-btn" onclick="hideSubjectForm()">Cancelar / Cancel</button>
-      </div>
-    </form>
-  `;
-
-  subjectsForm.style.display = 'block';
-
-  const form = document.getElementById('subject-form') as HTMLFormElement;
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const subjectData = {
-      cod_mat: (document.getElementById('cod_mat') as HTMLInputElement).value,
-      name: (document.getElementById('name') as HTMLInputElement).value,
-      description: (document.getElementById('description') as HTMLTextAreaElement).value,
-      credits: parseInt((document.getElementById('credits') as HTMLInputElement).value) || 0,
-      department: (document.getElementById('department') as HTMLInputElement).value,
-    };
-
-    try {
-      if (isEdit) {
-        await fetch(`${API_BASE}/subjects/${subjectData.cod_mat}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(subjectData),
-        });
-      } else {
-        await fetch(`${API_BASE}/subjects`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(subjectData),
-        });
-      }
-      hideSubjectForm();
-      loadSubjects();
-    } catch (error) {
-      console.error('Error saving subject:', error);
-    }
-  });
+  showAnyForm(structure.tables.subject, subjectsForm, subject, loadSubjects);
 }
 
 function hideSubjectForm() {
@@ -372,74 +369,7 @@ function hideSubjectForm() {
 }
 
 function showEnrollmentForm(enrollment?: Enrollment) {
-  const isEdit = !!enrollment;
-  enrollmentsForm.innerHTML = `
-    <form id="enrollment-form">
-      <h3>${isEdit ? 'Editar Inscripción / Edit Enrollment' : 'Agregar Inscripción / Add Enrollment'}</h3>
-      <div class="form-group">
-        <label for="numero_libreta">Número de Libreta / Student ID:</label>
-        <input type="text" id="numero_libreta" value="${enrollment?.numero_libreta || ''}" ${isEdit ? 'readonly' : ''} required>
-      </div>
-      <div class="form-group">
-        <label for="cod_mat">Código de Materia / Subject Code:</label>
-        <input type="text" id="cod_mat" value="${enrollment?.cod_mat || ''}" ${isEdit ? 'readonly' : ''} required>
-      </div>
-      <div class="form-group">
-        <label for="enrollment_date">Fecha de Inscripción / Enrollment Date:</label>
-        <input type="date" id="enrollment_date" value="${enrollment?.enrollment_date || ''}" required>
-      </div>
-      <div class="form-group">
-        <label for="grade">Nota / Grade:</label>
-        <input type="number" id="grade" step="0.01" value="${enrollment?.grade || ''}">
-      </div>
-      <div class="form-group">
-        <label for="status">Estado / Status:</label>
-        <select id="status">
-          <option value="enrolled" ${enrollment?.status === 'enrolled' ? 'selected' : ''}>Inscrito / Enrolled</option>
-          <option value="completed" ${enrollment?.status === 'completed' ? 'selected' : ''}>Completado / Completed</option>
-          <option value="failed" ${enrollment?.status === 'failed' ? 'selected' : ''}>Fallido / Failed</option>
-        </select>
-      </div>
-      <div class="form-actions">
-        <button type="submit">${isEdit ? 'Actualizar / Update' : 'Agregar / Add'}</button>
-        <button type="button" class="cancel-btn" onclick="hideEnrollmentForm()">Cancelar / Cancel</button>
-      </div>
-    </form>
-  `;
-
-  enrollmentsForm.style.display = 'block';
-
-  const form = document.getElementById('enrollment-form') as HTMLFormElement;
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const enrollmentData = {
-      numero_libreta: (document.getElementById('numero_libreta') as HTMLInputElement).value,
-      cod_mat: (document.getElementById('cod_mat') as HTMLInputElement).value,
-      enrollment_date: (document.getElementById('enrollment_date') as HTMLInputElement).value,
-      grade: parseFloat((document.getElementById('grade') as HTMLInputElement).value) || null,
-      status: (document.getElementById('status') as HTMLSelectElement).value,
-    };
-
-    try {
-      if (isEdit) {
-        await fetch(`${API_BASE}/enrollments/${enrollmentData.numero_libreta}/${enrollmentData.cod_mat}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(enrollmentData),
-        });
-      } else {
-        await fetch(`${API_BASE}/enrollments`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(enrollmentData),
-        });
-      }
-      hideEnrollmentForm();
-      loadEnrollments();
-    } catch (error) {
-      console.error('Error saving enrollment:', error);
-    }
-  });
+  showAnyForm(structure.tables.enrollments, enrollmentsForm, enrollment, loadEnrollments);
 }
 
 function hideEnrollmentForm() {
