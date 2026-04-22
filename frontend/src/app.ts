@@ -35,7 +35,7 @@ const structure = {
       pk: 'cod_mat',
       uiName: 'Subject'
     }
-  },
+  }
 }
 
 // Type definitions
