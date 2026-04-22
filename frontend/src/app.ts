@@ -222,26 +222,15 @@ function renderSubjectsTable(subjects: Subject[]) {
 }
 
 function renderEnrollmentsTable(enrollments: Enrollment[]) {
-  const tbody = enrollmentsTable.querySelector('tbody')!;
-  tbody.innerHTML = '';
-
-  enrollments.forEach(enrollment => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${enrollment.numero_libreta}</td>
-      <td>${enrollment.first_name} ${enrollment.last_name}</td>
-      <td>${enrollment.cod_mat}</td>
-      <td>${enrollment.subject_name}</td>
-      <td>${enrollment.enrollment_date}</td>
-      <td>${enrollment.grade || ''}</td>
-      <td>${enrollment.status || ''}</td>
-      <td class="actions">
-        <button class="edit-btn" onclick="editEnrollment('${enrollment.numero_libreta}', '${enrollment.cod_mat}')">Editar / Edit</button>
-        <button class="delete-btn" onclick="deleteEnrollment('${enrollment.numero_libreta}', '${enrollment.cod_mat}')">Eliminar / Delete</button>
-      </td>
-    `;
-    tbody.appendChild(row);
-  });
+  return renderAnyTable(enrollmentsTable, structure.tables.enrollments, enrollments.map(e => ({
+    numero_libreta: e.numero_libreta,
+    student_name: `${e.first_name ?? ''} ${e.last_name ?? ''}`,
+    cod_mat: e.cod_mat,
+    subject_name: e.subject_name,
+    enrollment_date: e.enrollment_date,
+    grade: e.grade,
+    status: e.status
+  }))) 
 }
 
 // Form functions
