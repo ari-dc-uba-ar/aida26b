@@ -80,40 +80,10 @@ const structure = {
   }
 }
 
-
-
-
-type Student = InferType<typeof structure.tables.students.columns>;
-
 // Type definitions
-interface StudentAnterior {
-  numero_libreta: string;
-  dni: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  enrollment_date: string;
-  status: string;
-}
-
-interface Subject {
-  cod_mat: string;
-  name: string;
-  description: string;
-  credits: number;
-  department: string;
-}
-
-interface Enrollment {
-  numero_libreta: string;
-  cod_mat: string;
-  enrollment_date: string;
-  grade: number;
-  status: string;
-  first_name?: string;
-  last_name?: string;
-  subject_name?: string;
-}
+type Student     = InferType<typeof structure.tables.students.columns>;
+type Subject     = InferType<typeof structure.tables.subject.columns>;
+type Enrollment  = InferType<typeof structure.tables.enrollments.columns>;
 
 // DOM elements
 const studentsBtn = document.getElementById('students-btn') as HTMLButtonElement;
@@ -231,7 +201,7 @@ function renderSubjectsTable(subjects: Subject[]) {
 function renderEnrollmentsTable(enrollments: Enrollment[]) {
   return renderAnyTable(enrollmentsTable, structure.tables.enrollments, enrollments.map(e => ({
     numero_libreta: e.numero_libreta,
-    student_name: `${e.first_name ?? ''} ${e.last_name ?? ''}`,
+    student_name: `${e.student_name ?? ''}`,
     cod_mat: e.cod_mat,
     subject_name: e.subject_name,
     enrollment_date: e.enrollment_date,
