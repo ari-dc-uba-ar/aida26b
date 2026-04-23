@@ -301,7 +301,7 @@ function showStudentForm(student?: Student) {
 }
 
 function hideStudentForm() {
-  studentsForm.style.display = 'none';
+  hideHTMLElement(studentsForm);
 }
 
 function showSubjectForm(subject?: Subject) {
@@ -372,7 +372,7 @@ function showSubjectForm(subject?: Subject) {
 }
 
 function hideSubjectForm() {
-  subjectsForm.style.display = 'none';
+  hideHTMLElement(subjectsForm);
 }
 
 function showEnrollmentForm(enrollment?: Enrollment) {
@@ -447,7 +447,11 @@ function showEnrollmentForm(enrollment?: Enrollment) {
 }
 
 function hideEnrollmentForm() {
-  enrollmentsForm.style.display = 'none';
+  hideHTMLElement(enrollmentsForm);
+}
+
+function hideHTMLElement(element: HTMLElement){
+  element.style.display = 'none';
 }
 
 // Global functions for onclick
