@@ -43,11 +43,11 @@ const structure = {
     students: {
       columns:{
         numero_libreta   :{type: 'string', label: "Número de Libreta / Student ID:"},
-        dni              :{type: 'string'},
+        dni              :{type: 'number'},
         first_name       :{type: 'string'},
         last_name        :{type: 'string'},
         email            :{type: 'string'},
-        enrollment_date  :{type: 'string'},
+        enrollment_date  :{type: 'date'},
         status           :{type: 'string'},
       },
       pk: 'numero_libreta',
@@ -58,7 +58,7 @@ const structure = {
         cod_mat     :{type: 'string'},
         name        :{type: 'string'},
         description :{type: 'string'},
-        credits     :{type: 'string'},
+        credits     :{type: 'number'},
         department  :{type: 'string'},
       },
       pk: 'cod_mat',
@@ -72,8 +72,8 @@ const structure = {
           student_name: { type: 'string' },
           cod_mat: { type: 'string' },
           subject_name: { type: 'string' },
-          enrollment_date: { type: 'string' },
-          grade: { type: 'string' },
+          enrollment_date: { type: 'date' },
+          grade: { type: 'number' },
           status: { type: 'string' }
         }
     } satisfies TableStructure
