@@ -51,7 +51,8 @@ const structure = {
         status           :{type: 'string'},
       },
       pk: 'numero_libreta',
-      uiName: 'Student'
+      uiName: 'Student',
+      endpoint: `${API_BASE}/students`
     } satisfies TableStructure,
     subject: {
       columns:{
@@ -62,7 +63,8 @@ const structure = {
         department  :{type: 'string'},
       },
       pk: 'cod_mat',
-      uiName: 'Subject'
+      uiName: 'Subject',
+      endpoint: `${API_BASE}/subjects`
     } satisfies TableStructure,
     enrollments: {
         pk: 'numero_libreta', 
@@ -75,7 +77,8 @@ const structure = {
           enrollment_date: { type: 'date' },
           grade: { type: 'number' },
           status: { type: 'string' }
-        }
+        },
+        endpoint: `${API_BASE}/enrollments`
     } satisfies TableStructure
   }
 }
@@ -448,15 +451,7 @@ function hideEnrollmentForm() {
 }
 
 // Global functions for onclick
-(window as any).editStudent = async (numero_libreta: string) => {
-  try {
-    const response = await fetch(`${API_BASE}/students/${numero_libreta}`);
-    const student: Student = await response.json();
-    showStudentForm(student);
-  } catch (error) {
-    console.error('Error loading student for edit:', error);
-  }
-};
+(window as any).editStudent    = editTable(structure.tables.students);
 
 (window as any).deleteStudent = async (numero_libreta: string) => {
   if (confirm('¿Está seguro de que desea eliminar este alumno? / Are you sure you want to delete this student?')) {
@@ -469,15 +464,7 @@ function hideEnrollmentForm() {
   }
 };
 
-(window as any).editSubject = async (cod_mat: string) => {
-  try {
-    const response = await fetch(`${API_BASE}/subjects/${cod_mat}`);
-    const subject: Subject = await response.json();
-    showSubjectForm(subject);
-  } catch (error) {
-    console.error('Error loading subject for edit:', error);
-  }
-};
+(window as any).editSubject    = editTable(structure.tables.subject);
 
 (window as any).deleteSubject = async (cod_mat: string) => {
   if (confirm('¿Está seguro de que desea eliminar esta materia? / Are you sure you want to delete this subject?')) {
@@ -490,15 +477,7 @@ function hideEnrollmentForm() {
   }
 };
 
-(window as any).editEnrollment = async (numero_libreta: string, cod_mat: string) => {
-  try {
-    const response = await fetch(`${API_BASE}/enrollments/${numero_libreta}/${cod_mat}`);
-    const enrollment: Enrollment = await response.json();
-    showEnrollmentForm(enrollment);
-  } catch (error) {
-    console.error('Error loading enrollment for edit:', error);
-  }
-};
+(window as any).editEnrollment = editTable(structure.tables.enrollments);
 
 (window as any).deleteEnrollment = async (numero_libreta: string, cod_mat: string) => {
   if (confirm('¿Está seguro de que desea eliminar esta inscripción? / Are you sure you want to delete this enrollment?')) {
@@ -509,6 +488,19 @@ function hideEnrollmentForm() {
       console.error('Error deleting enrollment:', error);
     }
   }
+};
+
+function editTable(table: TableStructure) {
+  return async (...args: string[]) => {
+    try {
+      const encodedPath = args.map(arg => encodeURIComponent(decodeURIComponent(arg))).join('/');
+      const response = await fetch(`${API_BASE}/${table.endpoint}/${encodedPath}`);
+      const data = await response.json();
+      showAnyForm(table, data);
+    } catch (error) {
+      console.error(`Error loading ${table.uiName} for edit:`, error);
+    }
+  };
 };
 
 // Initialize
