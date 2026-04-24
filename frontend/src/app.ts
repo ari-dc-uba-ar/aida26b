@@ -3,6 +3,7 @@
 
 const API_BASE = '/api';
 
+type HTMLFormInputsElements = HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement;
 
 
 type TypeMap = {
@@ -51,8 +52,7 @@ const structure = {
         status           :{type: 'string'},
       },
       pk: 'numero_libreta',
-      uiName: 'Student',
-      endpoint: `${API_BASE}/students`
+      uiName: 'Student'
     } satisfies TableStructure,
     subject: {
       columns:{
@@ -63,8 +63,7 @@ const structure = {
         department  :{type: 'string'},
       },
       pk: 'cod_mat',
-      uiName: 'Subject',
-      endpoint: `${API_BASE}/subjects`
+      uiName: 'Subject'
     } satisfies TableStructure,
     enrollments: {
         pk: 'numero_libreta', 
@@ -77,8 +76,7 @@ const structure = {
           enrollment_date: { type: 'date' },
           grade: { type: 'number' },
           status: { type: 'string' }
-        },
-        endpoint: `${API_BASE}/enrollments`
+        }
     } satisfies TableStructure
   }
 }
@@ -267,17 +265,7 @@ function showStudentForm(student?: Student) {
   const form = document.getElementById('student-form') as HTMLFormElement;
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const formData = new FormData(form);
-    const studentData = {
-      numero_libreta: (document.getElementById('numero_libreta') as HTMLInputElement).value,
-      dni: (document.getElementById('dni') as HTMLInputElement).value,
-      first_name: (document.getElementById('first_name') as HTMLInputElement).value,
-      last_name: (document.getElementById('last_name') as HTMLInputElement).value,
-      email: (document.getElementById('email') as HTMLInputElement).value,
-      enrollment_date: (document.getElementById('enrollment_date') as HTMLInputElement).value,
-      status: (document.getElementById('status') as HTMLSelectElement).value,
-    };
-
+    const studentData = extractValuesFromForm(structure.tables.students);
     try {
       if (isEdit) {
         await fetch(`${API_BASE}/students/${studentData.numero_libreta}`, {
@@ -341,14 +329,7 @@ function showSubjectForm(subject?: Subject) {
   const form = document.getElementById('subject-form') as HTMLFormElement;
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const subjectData = {
-      cod_mat: (document.getElementById('cod_mat') as HTMLInputElement).value,
-      name: (document.getElementById('name') as HTMLInputElement).value,
-      description: (document.getElementById('description') as HTMLTextAreaElement).value,
-      credits: parseInt((document.getElementById('credits') as HTMLInputElement).value) || 0,
-      department: (document.getElementById('department') as HTMLInputElement).value,
-    };
-
+    const subjectData = extractValuesFromForm(structure.tables.subject);
     try {
       if (isEdit) {
         await fetch(`${API_BASE}/subjects/${subjectData.cod_mat}`, {
@@ -416,14 +397,7 @@ function showEnrollmentForm(enrollment?: Enrollment) {
   const form = document.getElementById('enrollment-form') as HTMLFormElement;
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const enrollmentData = {
-      numero_libreta: (document.getElementById('numero_libreta') as HTMLInputElement).value,
-      cod_mat: (document.getElementById('cod_mat') as HTMLInputElement).value,
-      enrollment_date: (document.getElementById('enrollment_date') as HTMLInputElement).value,
-      grade: parseFloat((document.getElementById('grade') as HTMLInputElement).value) || null,
-      status: (document.getElementById('status') as HTMLSelectElement).value,
-    };
-
+    const enrollmentData = extractValuesFromForm(structure.tables.enrollments);
     try {
       if (isEdit) {
         await fetch(`${API_BASE}/enrollments/${enrollmentData.numero_libreta}/${enrollmentData.cod_mat}`, {
@@ -481,7 +455,17 @@ function hideHTMLElement(element: HTMLElement){
   }
 };
 
-(window as any).editEnrollment = editTable(structure.tables.enrollments);
+(window as any).editEnrollment = async (numero_libreta: string, cod_mat: string) => {
+  try {
+    const response = await fetch(`${API_BASE}/enrollments/${numero_libreta}/${cod_mat}`);
+    const enrollment: Enrollment = await response.json();
+    showEnrollmentForm(enrollment);
+  } catch (error) {
+    console.error('Error loading enrollment for edit:', error);
+  }
+};
+
+//(window as any).editEnrollment = editTable(structure.tables.enrollments);
 
 (window as any).deleteEnrollment = async (numero_libreta: string, cod_mat: string) => {
   if (confirm('¿Está seguro de que desea eliminar esta inscripción? / Are you sure you want to delete this enrollment?')) {
@@ -500,12 +484,51 @@ function editTable(table: TableStructure) {
       const encodedPath = args.map(arg => encodeURIComponent(decodeURIComponent(arg))).join('/');
       const response = await fetch(`${API_BASE}/${table.endpoint}/${encodedPath}`);
       const data = await response.json();
-      showAnyForm(table, data);
+      //showAnyForm(table, data);
     } catch (error) {
       console.error(`Error loading ${table.uiName} for edit:`, error);
     }
   };
 };
+
+function extractValuesFromForm(table: TableStructure) {
+  let structureTableData: Record<string, any> = {};
+  const formID = `${table.uiName.toLowerCase()}-form`;
+  const formInputs = document.forms.namedItem(formID)?.elements;
+  if (formInputs) {    
+    for (let i = 0; i < formInputs.length; i++) {
+      const element = formInputs.item(i);
+      if (element && element.id && isHTMLInputElement(element)) {
+        let value: any = element.value;
+        if (element instanceof HTMLInputElement){
+          value = InferTypeFromMyTypes(element); //En el resto de casos nos sirve que quede como string
+        }
+        structureTableData[element.id] = value;
+      }
+    }
+  }
+  return structureTableData;
+}
+
+function InferTypeFromMyTypes(element: any){
+  let value: string|number|boolean|Date = element.value;
+  switch(element.type){
+    case "number":
+      return parseFloat(element.value) || 0;
+    case "boolean":
+      return (element.value === "true");
+    case "date":
+      return new Date(element.value);
+    default:
+      return element.value;
+  }
+}
+
+function isHTMLInputElement(element: any){
+  return element instanceof HTMLInputElement || 
+         element instanceof HTMLSelectElement||
+         element instanceof HTMLTextAreaElement;
+}
 
 // Initialize
 showSection('students');
