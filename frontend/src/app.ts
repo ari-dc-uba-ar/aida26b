@@ -16,7 +16,8 @@ type MyTypeNames = keyof TypeMap;
 type ColumnDef = {
   type: MyTypeNames;
   label?: string;
-  required?: boolean
+  required?: boolean;
+  deduced?: boolean
 }
 
 type TableStructure = {
@@ -84,9 +85,9 @@ const structure = {
         uiName: 'Enrollment',
         columns: {
           numero_libreta:  { type: 'string', label: "Número de Libreta / Student ID:", required: true},
-          student_name:    { type: 'string', label: "Nombre de estudiante / Student Name:" },
+          student_name:    { type: 'string', label: "Nombre de estudiante / Student Name:", deduced: true},
           cod_mat:         { type: 'string', label: "Código de Materia / Subject Code:", required: true},
-          subject_name:    { type: 'string', label: "Nombre de Materia / Subject Name" },
+          subject_name:    { type: 'string', label: "Nombre de Materia / Subject Name", deduced: true},
           enrollment_date: { type: 'date'  , label: "Fecha de Inscripción / Enrollment Date:", required: true},
           grade:           { type: 'number', label: "Nota / Grade:" },
           status:          { type: 'status', label: "Estado / Status:" }
@@ -338,37 +339,38 @@ function isHTMLInputElement(element: any){
 function inputFor(tableName:string, tableForm: HTMLFormElement, column: ColumnDef, field: string, isEdit: boolean, pk: string, entity?: TableTuple) {
   const entityRecord = entity as Record<string, any>;
   const value = entityRecord ? (entityRecord[field] || '') : '';
+  if (!column.deduced){
+    let htmlContent: HTMLDivElement = document.createElement("div");
+    htmlContent.classList.add("forms-group");
 
-  let htmlContent: HTMLDivElement = document.createElement("div");
-  htmlContent.classList.add("forms-group");
-
-  const label: HTMLLabelElement = document.createElement("label");
-  label.htmlFor = field; 
-  label.textContent = column.label || '';
-  htmlContent.appendChild(label);
-  
-  let input;
-  if (field === "status") {
-    const select = document.createElement("select");
-    statusOptions[tableName].forEach(statusOption => 
-      select.add(new Option(statusOption.label, statusOption.value, false, statusOption.value === value)));
-    input = select;
-  } 
-  else if (field === "description") {
-    input       = document.createElement("textarea"); 
-    input.value = value;   
+    const label: HTMLLabelElement = document.createElement("label");
+    label.htmlFor = field; 
+    label.textContent = column.label || '';
+    htmlContent.appendChild(label);
+    
+    let input;
+    if (field === "status") {
+      const select = document.createElement("select");
+      statusOptions[tableName].forEach(statusOption => 
+        select.add(new Option(statusOption.label, statusOption.value, false, statusOption.value === value)));
+      input = select;
+    } 
+    else if (field === "description") {
+      input       = document.createElement("textarea"); 
+      input.value = value;   
+    }
+    else {    
+      input          = document.createElement("input");
+      input.type     = column.type;
+      input.value    = value;
+      input.required = column.required === true;
+      input.readOnly = isEdit && input.required;
+    }
+    input.id   = field;
+    input.name = field;
+    htmlContent.appendChild(input);
+    tableForm.appendChild(htmlContent);
   }
-  else {    
-    input          = document.createElement("input");
-    input.type     = column.type;
-    input.value    = value;
-    input.required = column.required === true;
-    input.readOnly = isEdit && input.required;
-  }
-  input.id   = field;
-  input.name = field;
-  htmlContent.appendChild(input);
-  tableForm.appendChild(htmlContent);
 }
 
 function addFormActions(tableForm: HTMLFormElement, isEdit?: boolean){
