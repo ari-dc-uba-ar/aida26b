@@ -169,7 +169,7 @@ app.delete('/api/subjects/:cod_mat', async (req, res) => {
 app.get('/api/enrollments', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT e.*, s.first_name, s.last_name, sub.name as subject_name
+      SELECT e.*, s.first_name || ' ' || s.last_name as student_name, sub.name as subject_name
       FROM enrollments e
       JOIN students s ON e.numero_libreta = s.numero_libreta
       JOIN subjects sub ON e.cod_mat = sub.cod_mat
