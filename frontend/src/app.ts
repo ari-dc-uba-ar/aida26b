@@ -16,6 +16,7 @@ type MyTypeNames = keyof TypeMap;
 type ColumnDef = {
   type: MyTypeNames;
   label?: string;
+  required?: boolean
 }
 
 type TableStructure = {
@@ -56,10 +57,10 @@ const structure = {
   tables: {
     students: {
       columns:{
-        numero_libreta   :{type: 'string', label: "Número de Libreta / Student ID:"},
-        dni              :{type: 'number', label: "DNI:"},
-        first_name       :{type: 'string', label: "Nombre / Name:"},
-        last_name        :{type: 'string', label: "Apellido / Surname:"},
+        numero_libreta   :{type: 'string', label: "Número de Libreta / Student ID:", required: true},
+        dni              :{type: 'number', label: "DNI:", required: true},
+        first_name       :{type: 'string', label: "Nombre / Name:", required: true},
+        last_name        :{type: 'string', label: "Apellido / Last name:", required: true},
         email            :{type: 'string', label: "Email:"},
         enrollment_date  :{type: 'date'  , label: "Fecha de inscripción / Enrollment Date:"},
         status           :{type: 'status', label: "Estado / Status:"},
@@ -69,8 +70,8 @@ const structure = {
     } satisfies TableStructure,
     subjects: {
       columns:{
-        cod_mat     :{type: 'string', label: "Código de Materia / Subject Code:"},
-        name        :{type: 'string', label: "Nombre de Materia / Subject Name:"},
+        cod_mat     :{type: 'string', label: "Código de Materia / Subject Code:", required: true},
+        name        :{type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
         description :{type: 'string', label: "Descripción de Materia / Subject Description:"},
         credits     :{type: 'number', label: "Créditos / Credits:"},
         department  :{type: 'string', label: "Departamento / Department:"},
@@ -82,11 +83,11 @@ const structure = {
         pk: 'numero_libreta cod_mat', 
         uiName: 'Enrollment',
         columns: {
-          numero_libreta:  { type: 'string', label: "Número de Libreta / Student ID:"},
+          numero_libreta:  { type: 'string', label: "Número de Libreta / Student ID:", required: true},
           student_name:    { type: 'string', label: "Nombre de estudiante / Student Name:" },
-          cod_mat:         { type: 'string', label: "Código de Materia / Subject Code:" },
+          cod_mat:         { type: 'string', label: "Código de Materia / Subject Code:", required: true},
           subject_name:    { type: 'string', label: "Nombre de Materia / Subject Name" },
-          enrollment_date: { type: 'date'  , label: "Fecha de Inscripción / Enrollment Date:" },
+          enrollment_date: { type: 'date'  , label: "Fecha de Inscripción / Enrollment Date:", required: true},
           grade:           { type: 'number', label: "Nota / Grade:" },
           status:          { type: 'status', label: "Estado / Status:" }
         }
@@ -361,7 +362,7 @@ function inputFor(tableName:string, tableForm: HTMLFormElement, column: ColumnDe
     input          = document.createElement("input");
     input.type     = column.type;
     input.value    = value;
-    input.required = field === pk;
+    input.required = column.required === true;
     input.readOnly = isEdit && input.required;
   }
   input.id   = field;
