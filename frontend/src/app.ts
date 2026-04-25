@@ -177,7 +177,8 @@ function showSection(section: string) {
 async function loadTableData(table: TableStructure) {
   const endpoint = getEndpointFromTable(table);
   try {
-    const response = await fetch(`${API_BASE}/${endpoint}`);
+    const response: Response = await fetch(`${API_BASE}/${endpoint}`);
+    console.log(response.status);
     let data = await response.json();
     renderAnyTable(document.getElementById(endpoint+"-table") as HTMLTableElement, table, data);
   } catch (error) {
@@ -274,7 +275,8 @@ function editTable(table: TableStructure) {
   return async (...args: string[]) => {
     try {
       const encodedPath = args.map(arg => encodeURIComponent(decodeURIComponent(arg))).join('/');
-      const response = await fetch(`${API_BASE}/${getEndpointFromTable(table)}/${encodedPath}`);
+      const response: Response = await fetch(`${API_BASE}/${getEndpointFromTable(table)}/${encodedPath}`);
+      console.log(response.status);
       const data = await response.json();
       showAnyForm(table, data);
     } catch (error) {
@@ -299,7 +301,8 @@ async function deleteTupleFromTable(table: TableStructure, pk: string){
   if (confirm(`¿Está seguro de que desea eliminar este ${table.uiName.toLowerCase()}? / Are you sure you want to delete this ${table.uiName.toLowerCase()}?`)) {
     try {
       const tableElementsName: string = getEndpointFromTable(table);
-      await fetch(`${API_BASE}/${tableElementsName}/${pk.split(' ').join('/')}`, { method: 'DELETE' });
+      const response: Response = await fetch(`${API_BASE}/${tableElementsName}/${pk.split(' ').join('/')}`, { method: 'DELETE' });
+      console.log(response.status);
       loadTableData(table);
     } catch (error) {
       console.error(`Error deleting ${table.uiName.toLowerCase()}:`, error);
@@ -364,7 +367,7 @@ function inputFor(tableName:string, tableForm: HTMLFormElement, column: ColumnDe
       input.type     = column.type;
       input.value    = value;
       input.required = column.required === true;
-      input.readOnly = isEdit && input.required;
+      input.readOnly = isEdit && pk.includes(field);
     }
     input.id   = field;
     input.name = field;
