@@ -220,7 +220,7 @@ app.put('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({success: true, data: "", message: `Error enrollment not found`} );
     }
-    res.json(result.rows[0]);
+    res.json({success: true, data: result.rows[0], message: "Enrollment updated successfully"});
   } catch (error) {
     console.error('Error updating enrollment:', error);
     res.status(500).json({success: false, data: "", message: `Internal server error: Error updating enrollment`} );
