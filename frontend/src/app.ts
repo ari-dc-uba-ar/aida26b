@@ -38,7 +38,7 @@ type InferType<FieldDefs extends Record<string, ColumnDef>> = {
   [K in keyof FieldDefs]: TypeMap[FieldDefs[K]['type']]
 }
 
-function InferTypeFromMyTypes(element: any){
+function inferTypeFromMyTypes(element: any){
   let value: string|number|boolean|Date = element.value;
   switch(element.type){
     case "number":
