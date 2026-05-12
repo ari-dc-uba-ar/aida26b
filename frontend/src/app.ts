@@ -3,6 +3,13 @@
 
 const API_BASE = '/api';
 
+type ApiResponse = {
+  success: boolean;  
+  data: Record<string, any>[];
+  message: string;
+
+};
+
 type TypeMap = {
   string: string;
   number: number;
@@ -178,11 +185,9 @@ async function loadTableData(table: TableStructure) {
   const endpoint = getEndpointFromTable(table);
   try {
     const response: Response = await fetch(`${API_BASE}/${endpoint}`);
-    let data = await response.json();
-    if (response.status === 404 || response.status === 500){
-      alert(data); 
-    } 
-    renderAnyTable(document.getElementById(endpoint+"-table") as HTMLTableElement, table, data);
+    let jsonResponse: ApiResponse = await response.json();
+    alert(jsonResponse.message);  
+    renderAnyTable(document.getElementById(endpoint+"-table") as HTMLTableElement, table, jsonResponse.data);
   } catch (error) {
     alert(`Error loading ${endpoint}`);
     console.error(`Error loading ${endpoint}:`, error);
@@ -279,9 +284,9 @@ function editTable(table: TableStructure) {
     try {
       const encodedPath = args.map(arg => encodeURIComponent(decodeURIComponent(arg))).join('/');
       const response: Response = await fetch(`${API_BASE}/${getEndpointFromTable(table)}/${encodedPath}`);
-      const data = await response.json();
-      alert(data); 
-      showAnyForm(table, data);
+      const jsonResponse = await response.json();
+      alert(jsonResponse.message);
+      showAnyForm(table, jsonResponse.data);
     } catch (error) {
       alert(`Error loading ${table.uiName.toLowerCase()} for edit`);
       console.error(`Error loading ${table.uiName} for edit:`, error);
@@ -306,9 +311,8 @@ async function deleteTupleFromTable(table: TableStructure, pk: string){
     try {
       const tableElementsName: string = getEndpointFromTable(table);
       const response: Response = await fetch(`${API_BASE}/${tableElementsName}/${pk.split(' ').join('/')}`, { method: 'DELETE' });
-      if (response.status === 404 || response.status === 500){
-        alert(response.json()); 
-      }
+      const jsonResponse = await response.json();
+      alert(jsonResponse.message); 
       loadTableData(table);
     } catch (error) {
       console.error(`Error deleting ${table.uiName.toLowerCase()}:`, error);
@@ -439,11 +443,13 @@ async function submitData(table: TableStructure, tablesFormContainer: HTMLElemen
       if (isEdit) {
         url += `/${table.pk.split(' ').map(elem => encodeURIComponent(entityData[elem])).join('/')}`;
       }
-      await fetch(url, {
+      const response = await fetch(url, {
         method: isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entityData),
       });
+      const jsonResponse = await response.json();
+      alert(jsonResponse.message);
       hideForm(tablesFormContainer);
       loadTableData(table);
     } catch (error) {

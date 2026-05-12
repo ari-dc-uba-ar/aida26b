@@ -3,7 +3,6 @@ import cors from 'cors';
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
-
 // Load environment variables
 dotenv.config();
 
@@ -27,10 +26,10 @@ app.use(express.json());
 app.get('/api/students', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM students ORDER BY numero_libreta');
-    res.json(result.rows);
+    res.json({success: true, data: result.rows, message: "Students table fetched succesfully"});
   } catch (error) {
     console.error('Error fetching students:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, data: "", message: 'Internal server error: Error fetching students'});
   }
 });
 
@@ -39,12 +38,12 @@ app.get('/api/students/:numero_libreta', async (req, res) => {
     const { numero_libreta } = req.params;
     const result = await pool.query('SELECT * FROM students WHERE numero_libreta = $1', [numero_libreta]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Student not found' });
+      return res.status(404).json({success: false, data: "", message: 'Student not found' });
     }
-    res.json(result.rows[0]);
+    res.json({success: true, data: result.rows[0], message: `Student fetched successfully`} );
   } catch (error) {
     console.error('Error fetching student:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching student`} );
   }
 });
 
@@ -55,10 +54,10 @@ app.post('/api/students', async (req, res) => {
       'INSERT INTO students (numero_libreta, dni, first_name, last_name, email, enrollment_date, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
       [numero_libreta, dni, first_name, last_name, email, enrollment_date, status]
     );
-    res.status(201).json(result.rows[0]);
+    res.status(201).json({success: false, data: result.rows[0], message: `Student created successfully`} );
   } catch (error) {
     console.error('Error creating student:', error);
-    res.status(500).json({ error: 'Internal server error while creating student' });
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error creating student`} );
   }
 });
 
@@ -71,12 +70,12 @@ app.put('/api/students/:numero_libreta', async (req, res) => {
       [dni, first_name, last_name, email, enrollment_date, status, numero_libreta]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: `Student called ${first_name} ${last_name} with Student ID ${numero_libreta} not found` });
+      return res.status(404).json({success: false, data: "", message: `Student not found`} );
     }
-    res.json(result.rows[0]);
+    return res.json({success: true, data: result.rows[0], message: `Student updated successfully`} );
   } catch (error) {
     console.error('Error updating student:', error);
-    res.status(500).json({ error: 'Internal server error while updating student' });
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error updating student`} );
   }
 });
 
@@ -85,12 +84,12 @@ app.delete('/api/students/:numero_libreta', async (req, res) => {
     const { numero_libreta } = req.params;
     const result = await pool.query('DELETE FROM students WHERE numero_libreta = $1 RETURNING *', [numero_libreta]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Student not found' });
+      return res.status(404).json({success: false, data: "", message: `Student not found`} );
     }
-    res.json({ message: 'Student deleted successfully' });
+    res.json({success: true, data: "", message: `Student deleted successfully`} );
   } catch (error) {
     console.error('Error deleting student:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting student`} );
   }
 });
 
@@ -98,10 +97,10 @@ app.delete('/api/students/:numero_libreta', async (req, res) => {
 app.get('/api/subjects', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM subjects ORDER BY cod_mat');
-    res.json(result.rows);
+    res.json({success: true, data: result.rows, message: `Subjects table fetched successfully`} );
   } catch (error) {
-    console.error('Error fetching subjects:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error fetching subject:', error);
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching subjects`} );
   }
 });
 
@@ -110,12 +109,12 @@ app.get('/api/subjects/:cod_mat', async (req, res) => {
     const { cod_mat } = req.params;
     const result = await pool.query('SELECT * FROM subjects WHERE cod_mat = $1', [cod_mat]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Subject not found' });
+      return res.status(404).json({success: false, data: "", message: `Subject not found`} );
     }
-    res.json(result.rows[0]);
+    res.json({success: true, data: result.rows[0], message: `Subject fetched successfully`} );
   } catch (error) {
     console.error('Error fetching subject:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching subject`} );
   }
 });
 
@@ -126,10 +125,10 @@ app.post('/api/subjects', async (req, res) => {
       'INSERT INTO subjects (cod_mat, name, description, credits, department) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [cod_mat, name, description, credits, department]
     );
-    res.status(201).json(result.rows[0]);
+    res.status(201).json({success: false, data: result.rows[0], message: `Subject created succefully`} );
   } catch (error) {
     console.error('Error creating subject:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error creating subject`} );
   }
 });
 
@@ -142,12 +141,12 @@ app.put('/api/subjects/:cod_mat', async (req, res) => {
       [name, description, credits, department, cod_mat]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Subject not found' });
+      return res.status(404).json({success: false, data: "", message: `Subject not found`} );
     }
-    res.json(result.rows[0]);
+    res.json({success: false, data: result.rows[0], message: `Subject updated succesfully`} );
   } catch (error) {
     console.error('Error updating subject:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, data: "", message: `Error updating subject`} );
   }
 });
 
@@ -156,12 +155,12 @@ app.delete('/api/subjects/:cod_mat', async (req, res) => {
     const { cod_mat } = req.params;
     const result = await pool.query('DELETE FROM subjects WHERE cod_mat = $1 RETURNING *', [cod_mat]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Subject not found' });
+      return res.status(404).json({success: false, data: "", message: `Subject not found`} );
     }
-    res.json({ message: 'Subject deleted successfully' });
+    res.json({success: true, data: "", message: `Subject deleted successfully`} );
   } catch (error) {
     console.error('Error deleting subject:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting subject`} );
   }
 });
 
@@ -175,10 +174,10 @@ app.get('/api/enrollments', async (req, res) => {
       JOIN subjects sub ON e.cod_mat = sub.cod_mat
       ORDER BY e.numero_libreta, e.cod_mat
     `);
-    res.json(result.rows);
+    res.json({success: true, data: result.rows, message: `Enrollments fetched succesfully`} );
   } catch (error) {
     console.error('Error fetching enrollments:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, data: "", message: `Internal server: Error fetching enrollments`} );
   }
 });
 
@@ -187,12 +186,12 @@ app.get('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
     const { numero_libreta, cod_mat } = req.params;
     const result = await pool.query('SELECT * FROM enrollments WHERE numero_libreta = $1 AND cod_mat = $2', [numero_libreta, cod_mat]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Enrollment not found' });
+      return res.status(404).json({success: false, data: "", message: `Internal server error: Enrollment not found`} );
     }
-    res.json(result.rows[0]);
+    res.json({success: true, data: result.rows[0], message: `Enrollment found`} );
   } catch (error) {
     console.error('Error fetching enrollment:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching enrollment`} );
   }
 });
 
@@ -203,10 +202,10 @@ app.post('/api/enrollments', async (req, res) => {
       'INSERT INTO enrollments (numero_libreta, cod_mat, enrollment_date, grade, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [numero_libreta, cod_mat, enrollment_date, grade, status]
     );
-    res.status(201).json(result.rows[0]);
+    res.status(201).json({success: true, data: result.rows[0], message: `Enrollment created succesfully`} );
   } catch (error) {
     console.error('Error creating enrollment:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error creating enrollment`} );
   }
 });
 
@@ -219,12 +218,12 @@ app.put('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
       [enrollment_date, grade, status, numero_libreta, cod_mat]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Enrollment not found' });
+      return res.status(404).json({success: true, data: "", message: `Error enrollment not found`} );
     }
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating enrollment:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error updating enrollment`} );
   }
 });
 
@@ -233,12 +232,12 @@ app.delete('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
     const { numero_libreta, cod_mat } = req.params;
     const result = await pool.query('DELETE FROM enrollments WHERE numero_libreta = $1 AND cod_mat = $2 RETURNING *', [numero_libreta, cod_mat]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Enrollment not found' });
+      return res.status(404).json({success: false, data: "", message: 'Enrollment not found'} );
     }
-    res.json({ message: 'Enrollment deleted successfully' });
+    res.json({success: true, data: "", message: 'Enrollment deleted successfully'} );
   } catch (error) {
     console.error('Error deleting enrollment:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting enrollment`} );
   }
 });
 
@@ -253,3 +252,8 @@ app.get('*', (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+
+
+
+
+ 
