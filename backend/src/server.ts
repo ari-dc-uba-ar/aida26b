@@ -58,7 +58,7 @@ app.post('/api/students', async (req, res) => {
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creating student:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error while creating student' });
   }
 });
 
@@ -71,12 +71,12 @@ app.put('/api/students/:numero_libreta', async (req, res) => {
       [dni, first_name, last_name, email, enrollment_date, status, numero_libreta]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Student not found' });
+      return res.status(404).json({ error: `Student called ${first_name} ${last_name} with Student ID ${numero_libreta} not found` });
     }
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating student:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error while updating student' });
   }
 });
 

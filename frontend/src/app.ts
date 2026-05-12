@@ -178,10 +178,13 @@ async function loadTableData(table: TableStructure) {
   const endpoint = getEndpointFromTable(table);
   try {
     const response: Response = await fetch(`${API_BASE}/${endpoint}`);
-    console.log(response.status);
     let data = await response.json();
+    if (response.status === 404 || response.status === 500){
+      alert(data); 
+    } 
     renderAnyTable(document.getElementById(endpoint+"-table") as HTMLTableElement, table, data);
   } catch (error) {
+    alert(`Error loading ${endpoint}`);
     console.error(`Error loading ${endpoint}:`, error);
   }
 }
@@ -276,10 +279,11 @@ function editTable(table: TableStructure) {
     try {
       const encodedPath = args.map(arg => encodeURIComponent(decodeURIComponent(arg))).join('/');
       const response: Response = await fetch(`${API_BASE}/${getEndpointFromTable(table)}/${encodedPath}`);
-      console.log(response.status);
       const data = await response.json();
+      alert(data); 
       showAnyForm(table, data);
     } catch (error) {
+      alert(`Error loading ${table.uiName.toLowerCase()} for edit`);
       console.error(`Error loading ${table.uiName} for edit:`, error);
     }
   };
@@ -302,10 +306,13 @@ async function deleteTupleFromTable(table: TableStructure, pk: string){
     try {
       const tableElementsName: string = getEndpointFromTable(table);
       const response: Response = await fetch(`${API_BASE}/${tableElementsName}/${pk.split(' ').join('/')}`, { method: 'DELETE' });
-      console.log(response.status);
+      if (response.status === 404 || response.status === 500){
+        alert(response.json()); 
+      }
       loadTableData(table);
     } catch (error) {
       console.error(`Error deleting ${table.uiName.toLowerCase()}:`, error);
+      alert(`Error deleting ${table.uiName.toLowerCase()}`)
     }
   }
 }
@@ -428,26 +435,24 @@ async function submitData(table: TableStructure, tablesFormContainer: HTMLElemen
   const entityData = extractValuesFromForm(table);
     try {
       const endpoint = getEndpointFromTable(table);
+      let url = `${API_BASE}/${endpoint}`;
       if (isEdit) {
-        let url = `${API_BASE}/${endpoint}/${table.pk.split(' ').map(elem => encodeURIComponent(entityData[elem])).join('/')}`;
-        await fetch(url, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(entityData),
-        });
-      } else {
-        await fetch(`${API_BASE}/${endpoint}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(entityData),
-        });
+        url += `/${table.pk.split(' ').map(elem => encodeURIComponent(entityData[elem])).join('/')}`;
       }
+      await fetch(url, {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entityData),
+      });
       hideForm(tablesFormContainer);
       loadTableData(table);
     } catch (error) {
       console.error(`Error saving ${table.uiName}:`, error);
     }
 }
+
+
+
 
 // Initialize
 showSection('students');
