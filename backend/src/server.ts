@@ -362,15 +362,19 @@ function columnNamesEqualsNumber(table: TableStructure, columnsNames: string[], 
 }
 
 app.put('/api/:tableName/:pk', async (req, res) => {
-  const { tableName, pk } = req.params;
+  const tableName = req.params.tableName;
+  const pkValues  = req.params.pk.split(pkValuesSeparator);
   const structureTable: Record<string, TableStructure> = structure.tables;
   const values = Object.values(req.body);
-  const setArgumentsString = columnNamesEqualsNumber(structureTable[tableName], structureTable[tableName].tableColumns, 2);
+  const setArguments = columnNamesEqualsNumber(structureTable[tableName], structureTable[tableName].tableColumns);
+  const whereArguments = columnNamesEqualsNumber(structureTable[tableName], structureTable[tableName].pk.split(' '), 1, ' AND ');
+  console.log(setArguments);
+  console.log(whereArguments);
+  console.log(values);
+  console.log(pkValues);
   try {
   const result = await pool.query(
-      `UPDATE ${tableName} SET ${setArgumentsString} WHERE ${structureTable[tableName].pk} = $1 RETURNING *`,
-      values
-    );
+      `UPDATE ${tableName} SET ${setArguments} WHERE ${whereArguments} RETURNING *`, values);
     if (result.rows.length === 0) {
       return res.status(404).json({success: false, data: "", message: `${structureTable[tableName].uiName} not found`} );
     }
@@ -382,7 +386,7 @@ app.put('/api/:tableName/:pk', async (req, res) => {
   }
 });
 
-
+/*
 app.put('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
   try {
     const { numero_libreta, cod_mat } = req.params;
@@ -400,7 +404,7 @@ app.put('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
     res.status(500).json({success: false, data: "", message: `Internal server error: Error updating enrollment`} );
   }
 });
-
+*/
 //Delete
 /*
 app.delete('/api/students/:numero_libreta', async (req, res) => {

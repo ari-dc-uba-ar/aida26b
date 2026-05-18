@@ -438,8 +438,8 @@ async function showAnyForm(table: TableStructure, entity?: TableTuple) {
   formHeader.textContent = `${isEdit ? 'Edit ' + table.uiName : 'Add ' + table.uiName}`;
   form.appendChild(formHeader);
   //Add inputs
-  for (const [field, columnDef] of Object.entries(table.columnsToDisplay)) {
-      inputFor(table.uiName, form, columnDef, field, isEdit, table.pk, entity);
+  for (const field of table.tableColumns) {
+      inputFor(table.uiName, form, table.columnsToDisplay[field], field, isEdit, table.pk, entity);
   }
   //Add buttons
   addFormActions(form, isEdit);
@@ -464,7 +464,7 @@ async function submitData(table: TableStructure, tablesFormContainer: HTMLElemen
       const endpoint = getEndpointFromTable(table);
       let url = `${API_BASE}/${endpoint}`;
       if (isEdit) {
-        url += `/${table.pk.split(' ').map(elem => encodeURIComponent(entityData[elem])).join('/')}`;
+        url += `/${table.pk.split(' ').map(elem => encodeURIComponent(entityData[elem])).join(pkValuesSeparator)}`;
       }
       const response = await fetch(url, {
         method: isEdit ? 'PUT' : 'POST',
