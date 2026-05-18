@@ -363,7 +363,7 @@ app.put('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
 });
 
 //Delete
-
+/*
 app.delete('/api/students/:numero_libreta', async (req, res) => {
   try {
     const { numero_libreta } = req.params;
@@ -391,6 +391,22 @@ app.delete('/api/subjects/:cod_mat', async (req, res) => {
     console.error('Error deleting subject:', error);
     res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting subject`} );
   }
+});*/
+
+app.delete('/api/:tableName/:pk', async (req, res) => {
+  try {
+    const structureTable: Record<string, TableStructure> = structure.tables;
+    const { tableName, pk } = req.params;
+    const result = await pool.query(`DELETE FROM $1 WHERE ${structureTable} = $2 RETURNING *`, [tableName, pk]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({success: false, data: "", message: `${tableName} not found`} );
+    }
+    res.json({success: true, data: "", message: `${tableName} deleted successfully`} );
+  } catch (error) {
+    const errorMessage = `Error deleting ${req.params.tableName}:`;
+    console.error(errorMessage, error);
+    res.status(500).json({success: false, data: "", message: `Internal server error: ` + errorMessage} );
+  }
 });
 
 app.delete('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
@@ -406,7 +422,6 @@ app.delete('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
     res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting enrollment`} );
   }
 });
-
 
 function parsePKs(columnNames: string[], pks: string): columnEntry[]{
   const columnEntries: columnEntry[] = [];
