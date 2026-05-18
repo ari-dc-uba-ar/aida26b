@@ -3,9 +3,10 @@ import cors from 'cors';
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
-import {database, columnEntry } from './persistence/database.ts';
-import { PostgresDatabase } from './persistence/postgresDatabase.ts';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 // Load environment variables
 dotenv.config();
 
@@ -134,19 +135,6 @@ app.get('/api/students', async (req, res) => {
   }
 });
 */
-app.get('/api/:singleEntityTable', async (req, res) => {
-  try {
-    const singleEntityTable: string = req.params.singleEntityTable;
-    const structureTable: Record<string, TableStructure> = structure.tables;
-    const result = await pool.query(`SELECT * FROM ${singleEntityTable} ORDER BY ${structureTable[singleEntityTable].pk}`);
-    res.json({success: true, data: result.rows, message: `${structureTable[singleEntityTable].uiName} table fetched succesfully`});
-  } catch (error) {
-    const errorMessage = `Error fetching ${req.params.singleEntityTable}:`;
-    console.error(errorMessage, error);
-    res.status(500).json({success: false, data: "", message: "Internal server error:" + errorMessage});
-  }
-});
-
 
 //getCompositeTable
 app.get('/api/enrollments', async (req, res) => {
@@ -164,6 +152,20 @@ app.get('/api/enrollments', async (req, res) => {
     res.status(500).json({success: false, data: "", message: `Internal server: Error fetching enrollments`} );
   }
 });
+
+app.get('/api/:singleEntityTable', async (req, res) => {
+  try {
+    const singleEntityTable: string = req.params.singleEntityTable;
+    const structureTable: Record<string, TableStructure> = structure.tables;
+    const result = await pool.query(`SELECT * FROM ${singleEntityTable} ORDER BY ${structureTable[singleEntityTable].pk}`);
+    res.json({success: true, data: result.rows, message: `${structureTable[singleEntityTable].uiName} table fetched succesfully`});
+  } catch (error) {
+    const errorMessage = `Error fetching ${req.params.singleEntityTable}:`;
+    console.error(errorMessage, error);
+    res.status(500).json({success: false, data: "", message: "Internal server error:" + errorMessage});
+  }
+});
+
 
 //getRowOfGenericTableByPrimaryKey
 /*
@@ -196,10 +198,11 @@ app.get('/api/students/:numero_libreta', async (req, res) => {
 });*/
 
 app.get('/api/:singleEntityTable/:pk', async (req, res) => {
+  const structureTable: Record<string, TableStructure> = structure.tables;
+  const { singleEntityTable, pk } = req.params;
+  console.log(singleEntityTable, structureTable[singleEntityTable].pk, pk);
   try {
-    const structureTable: Record<string, TableStructure> = structure.tables;
-    const { singleEntityTable, pk } = req.params;
-    const result = await pool.query(`SELECT * FROM $1 WHERE 2$ = $3`, [singleEntityTable, structureTable[singleEntityTable].pk, pk]);
+    const result = await pool.query(`SELECT * FROM ${singleEntityTable} WHERE ${structureTable[singleEntityTable].pk} = $1`, [pk]);
     if (result.rows.length === 0) {
       return res.status(404).json({success: false, data: "", message: `${structureTable[singleEntityTable].uiName} not found`});
     }
@@ -272,13 +275,14 @@ app.post('/api/enrollments', async (req, res) => {
 });*/
 
 app.post('/api/:tableName', async (req, res) => {
+  const structureTable: Record<string, TableStructure> = structure.tables;
+  const tableName = req.params.tableName;
+  const values = Object.values(req.body);
+  const [tupleWithTableColumnsNames, tupleWithReplaceParameters] = formatTableColumnsForQuery(structureTable[tableName]);
+  console.log(tableName);console.log(values);console.log(tupleWithTableColumnsNames);console.log(tupleWithReplaceParameters);
   try {
-    const structureTable: Record<string, TableStructure> = structure.tables;
-    const tableName = req.params.tableName;
-    const valuess = [tableName].concat(Object.values(req.body));
-    const [tupleWithTableColumnsNames, tupleWithReplaceParameters] = formatTableColumnsForQuert(structureTable[tableName], 2);
     const result = await pool.query(
-      `INSERT INTO $1 ${tupleWithTableColumnsNames} VALUES ${tupleWithReplaceParameters} RETURNING *`, valuess
+      `INSERT INTO ${tableName} ${tupleWithTableColumnsNames} VALUES ${tupleWithReplaceParameters} RETURNING *`, values
     );
     res.status(201).json({success: true, data: result.rows[0], message: `${tableName} created succesfully`} );
   } catch (error) {
@@ -288,26 +292,22 @@ app.post('/api/:tableName', async (req, res) => {
   }
 });
 
-
-function formatTableColumnsForQuert(table: TableStructure, from: number = 1): string[]{
-  let entries = Array.from(Object.entries(table.columns).keys());
+function formatTableColumnsForQuery(table: TableStructure, from: number = 1): string[]{
+  let entries = Array.from(Object.keys(table.columns));
+  console.log('Table entries: ', entries);
   let tupleWithReplaceParameters = '';
   let columnsCount = from;
   entries.forEach(_ => {
     tupleWithReplaceParameters += `$${columnsCount} `;
     columnsCount++;
   });
-  tupleWithReplaceParameters = '(' + tupleWithReplaceParameters.split(' ').join(',') + ')';
+  tupleWithReplaceParameters = '(' + tupleWithReplaceParameters.split(' ').join(',').slice(0,-1) + ')';
   let tupleContent: string = '(' + entries.join(',') + ')';
   return [tupleContent, tupleWithReplaceParameters];
 }
 
-
-
-
-
 //Put
-
+/*
 app.put('/api/students/:numero_libreta', async (req, res) => {
   try {
     const { numero_libreta } = req.params;
@@ -343,6 +343,40 @@ app.put('/api/subjects/:cod_mat', async (req, res) => {
     res.status(500).json({success: false, data: "", message: `Error updating subject`} );
   }
 });
+*/
+
+function columnNamesEqualsNumber(table: TableStructure, from: number = 1): [string, number]{
+  let res: string = '';
+  let i: number   = from;
+  for (let column in table.columns){
+    if (!table.pk.includes(column)){
+      res += `${column} = $${i++},`;
+    }
+  }
+  return [res.slice(0, -1), i];
+}
+
+app.put('/api/:tableName/:pk', async (req, res) => {
+  const { tableName, pk } = req.params;
+  const structureTable: Record<string, TableStructure> = structure.tables;
+  const values = Object.values(req.body);
+  const [setArgumentsString, argumentsCount] = columnNamesEqualsNumber(structureTable[tableName], 2);
+  try {
+  const result = await pool.query(
+      `UPDATE ${tableName} SET ${setArgumentsString} WHERE ${structureTable[tableName].pk} = $1 RETURNING *`,
+      values
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({success: false, data: "", message: `${structureTable[tableName].uiName} not found`} );
+    }
+    res.json({success: false, data: result.rows[0], message: `${structureTable[tableName].uiName} updated succesfully`} );
+  } catch (error) {
+    const errorMessage: string = `Error updating ${structureTable[tableName].uiName}:`;
+    console.error(errorMessage, error);
+    res.status(500).json({success: false, data: "", message: `Internal server error:` + errorMessage});
+  }
+});
+
 
 app.put('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
   try {
@@ -397,7 +431,7 @@ app.delete('/api/:tableName/:pk', async (req, res) => {
   try {
     const structureTable: Record<string, TableStructure> = structure.tables;
     const { tableName, pk } = req.params;
-    const result = await pool.query(`DELETE FROM $1 WHERE ${structureTable} = $2 RETURNING *`, [tableName, pk]);
+    const result = await pool.query(`DELETE FROM ${tableName} WHERE ${structureTable[tableName].pk} = $2 RETURNING *`, [pk]);
     if (result.rows.length === 0) {
       return res.status(404).json({success: false, data: "", message: `${tableName} not found`} );
     }
@@ -422,14 +456,6 @@ app.delete('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
     res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting enrollment`} );
   }
 });
-
-function parsePKs(columnNames: string[], pks: string): columnEntry[]{
-  const columnEntries: columnEntry[] = [];
-  const values: string[] = pks.split('/');
-  let i = 0;
-  columnNames.forEach(pkFieldName => columnEntries.push({fieldName: pkFieldName, fieldValue: values[i++]}));
-  return columnEntries;
-}
 
 /*
 app.delete('/api/:table/:pks', async (req, res) => {
