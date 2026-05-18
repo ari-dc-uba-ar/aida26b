@@ -113,6 +113,7 @@ const structure = {
 }
 
 //getGenericTable
+/*
 app.get('/api/subjects', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM subjects ORDER BY cod_mat');
@@ -123,18 +124,6 @@ app.get('/api/subjects', async (req, res) => {
   }
 });
 
-app.get('/api/:singleEntityTable', async (req, res) => {
-  try {
-    const singleEntityTable: string = req.params.singleEntityTable;
-    const structureTable: TableStructure = structure.tables[singleEntityTable];
-    const result = await pool.query(`SELECT * FROM ${singleEntityTable} ORDER BY numero_libreta`);
-    res.json({success: true, data: result.rows, message: "Students table fetched succesfully"});
-  } catch (error) {
-    console.error('Error fetching students:', error);
-    res.status(500).json({success: false, data: "", message: 'Internal server error: Error fetching students'});
-  }
-});
-
 app.get('/api/students', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM students ORDER BY numero_libreta');
@@ -142,6 +131,19 @@ app.get('/api/students', async (req, res) => {
   } catch (error) {
     console.error('Error fetching students:', error);
     res.status(500).json({success: false, data: "", message: 'Internal server error: Error fetching students'});
+  }
+});
+*/
+app.get('/api/:singleEntityTable', async (req, res) => {
+  try {
+    const singleEntityTable: string = req.params.singleEntityTable;
+    const structureTable: Record<string, TableStructure> = structure.tables;
+    const result = await pool.query(`SELECT * FROM ${singleEntityTable} ORDER BY ${structureTable[singleEntityTable].pk}`);
+    res.json({success: true, data: result.rows, message: `${structureTable[singleEntityTable].uiName} table fetched succesfully`});
+  } catch (error) {
+    const errorMessage = `Error fetching ${req.params.singleEntityTable}:`;
+    console.error(errorMessage, error);
+    res.status(500).json({success: false, data: "", message: "Internal server error:" + errorMessage});
   }
 });
 
