@@ -297,9 +297,7 @@ function editTable(table: TableStructure) {
   return async (...args: string[]) => {
     try {
       const encodedPath = args.map(arg => encodeURIComponent(decodeURIComponent(arg))).join('/');
-      const response: Response = await fetch(`${API_BASE}/${getEndpointFromTable(table)}/${encodedPath}`, {
-      body: table.foreignKeys? JSON.stringify(pairForeignKeyRelationsWithPrimaryKeys(table.foreignKeys)) : '' 
-    });
+      const response: Response = await fetch(`${API_BASE}/${getEndpointFromTable(table)}/${encodedPath}`);
       const jsonResponse = await response.json();
       alert(jsonResponse.message);
       showAnyForm(table, jsonResponse.data);
@@ -334,7 +332,7 @@ async function deleteTupleFromTable(table: TableStructure, pk: string){
   if (confirm(`¿Está seguro de que desea eliminar este ${table.uiName.toLowerCase()}? / Are you sure you want to delete this ${table.uiName.toLowerCase()}?`)) {
     try {
       const tableElementsName: string = getEndpointFromTable(table);
-      const response: Response = await fetch(`${API_BASE}/${tableElementsName}/${pk.split(' ').join('/')}`, { method: 'DELETE', body: JSON.stringify(fieldNamesOfTable(table))});
+      const response: Response = await fetch(`${API_BASE}/${tableElementsName}/${pk.split(' ').join('/')}`, { method: 'DELETE'});
       const jsonResponse = await response.json();
       alert(jsonResponse.message); 
       loadTableData(table);

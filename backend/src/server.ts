@@ -13,7 +13,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Database connection
-const pool: database =  new PostgresDatabase({
+const pool =  new Pool({
   host: process.env.DB_HOST,
   port: parseInt(process.env.DB_PORT || '5432'),
   database: process.env.DB_NAME,
@@ -36,10 +36,11 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
-app.get('/api/:table/:pk', async (req, res) => {
+
+app.get('/api/students/:numero_libreta', async (req, res) => {
   try {
-    const { table, pk } = req.params;
-    const result = await pool.getRow(table, pk);
+    const { numero_libreta } = req.params;
+    const result = await pool.query('SELECT * FROM students WHERE numero_libreta = $1', [numero_libreta]);
     if (result.rows.length === 0) {
       return res.status(404).json({success: false, data: "", message: 'Student not found' });
     }
@@ -82,7 +83,7 @@ app.put('/api/students/:numero_libreta', async (req, res) => {
   }
 });
 
-/*app.delete('/api/students/:numero_libreta', async (req, res) => {
+app.delete('/api/students/:numero_libreta', async (req, res) => {
   try {
     const { numero_libreta } = req.params;
     const result = await pool.query('DELETE FROM students WHERE numero_libreta = $1 RETURNING *', [numero_libreta]);
@@ -94,7 +95,7 @@ app.put('/api/students/:numero_libreta', async (req, res) => {
     console.error('Error deleting student:', error);
     res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting student`} );
   }
-});*/
+});
 
 // Subjects routes
 app.get('/api/subjects', async (req, res) => {
@@ -153,7 +154,7 @@ app.put('/api/subjects/:cod_mat', async (req, res) => {
   }
 });
 
-/*app.delete('/api/subjects/:cod_mat', async (req, res) => {
+app.delete('/api/subjects/:cod_mat', async (req, res) => {
   try {
     const { cod_mat } = req.params;
     const result = await pool.query('DELETE FROM subjects WHERE cod_mat = $1 RETURNING *', [cod_mat]);
@@ -165,7 +166,7 @@ app.put('/api/subjects/:cod_mat', async (req, res) => {
     console.error('Error deleting subject:', error);
     res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting subject`} );
   }
-});*/
+});
 
 // Enrollments routes
 app.get('/api/enrollments', async (req, res) => {
@@ -230,7 +231,7 @@ app.put('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
   }
 });
 
-/*app.delete('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
+app.delete('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
   try {
     const { numero_libreta, cod_mat } = req.params;
     const result = await pool.query('DELETE FROM enrollments WHERE numero_libreta = $1 AND cod_mat = $2 RETURNING *', [numero_libreta, cod_mat]);
@@ -243,7 +244,7 @@ app.put('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
     res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting enrollment`} );
   }
 });
-*/
+
 
 function parsePKs(columnNames: string[], pks: string): columnEntry[]{
   const columnEntries: columnEntry[] = [];
@@ -253,6 +254,7 @@ function parsePKs(columnNames: string[], pks: string): columnEntry[]{
   return columnEntries;
 }
 
+/*
 app.delete('/api/:table/:pks', async (req, res) => {
   try {
     const tableName: string = req.params.table;
@@ -269,7 +271,7 @@ app.delete('/api/:table/:pks', async (req, res) => {
     console.error(`Error deleting ${req.params.table}:`, error);
     res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting ${req.params.table}`} );
   }
-});
+});*/
 
 
 
