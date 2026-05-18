@@ -101,8 +101,10 @@ export const structure = {
         pk: 'numero_libreta cod_mat', 
         uiName: 'Enrollment',
         columns: {
-          student:  { type: 'Student'},
-          subject:  { type: 'Subject'},
+          numero_libreta:  {type: 'string', label: "Número de Libreta / Student ID:", required: true},
+          subject_name:    {type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
+          student_name:    {type: 'string', label: "Código de Materia / Subject Code:", required: true},
+          cod_mat:         {type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
           enrollment_date: { type: 'date'  , label: "Fecha de Inscripción / Enrollment Date:", required: true},
           grade:           { type: 'number', label: "Nota / Grade:" },
           status:          { type: 'status', label: "Estado / Status:" }
