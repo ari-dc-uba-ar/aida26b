@@ -166,6 +166,7 @@ app.get('/api/enrollments', async (req, res) => {
 });
 
 //getRowOfGenericTableByPrimaryKey
+/*
 app.get('/api/subjects/:cod_mat', async (req, res) => {
   try {
     const { cod_mat } = req.params;
@@ -192,7 +193,24 @@ app.get('/api/students/:numero_libreta', async (req, res) => {
     console.error('Error fetching student:', error);
     res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching student`} );
   }
+});*/
+
+app.get('/api/:singleEntityTable/:pk', async (req, res) => {
+  try {
+    const structureTable: Record<string, TableStructure> = structure.tables;
+    const { singleEntityTable, pk } = req.params;
+    const result = await pool.query(`SELECT * FROM $1 WHERE 2$ = $3`, [singleEntityTable, structureTable[singleEntityTable].pk, pk]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({success: false, data: "", message: `${structureTable[singleEntityTable].uiName} not found`});
+    }
+    res.json({success: true, data: result.rows[0], message: `${structureTable[singleEntityTable].uiName} fetched successfully`} );
+  } catch (error) {
+    const errorMessage = `Error fetching ${req.params.singleEntityTable}:`;
+    console.error(errorMessage, error);
+    res.status(500).json({success: false, data: "", message: `Internal server error:` + errorMessage} );
+  }
 });
+
 
 //getRowOfCompositeTableByPKs
 app.get('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
