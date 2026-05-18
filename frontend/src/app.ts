@@ -7,8 +7,14 @@ type ApiResponse = {
   success: boolean;  
   data: Record<string, any>[];
   message: string;
-
 };
+
+// Type definitions
+type Student     = InferType<typeof structure.tables.students.columns>;
+type Subject     = InferType<typeof structure.tables.subjects.columns>;
+type Enrollment  = InferType<typeof structure.tables.enrollments.columns>;
+type TableTuple  = Student | Subject | Enrollment;
+type Status      = {value: string, label: string};
 
 type TypeMap = {
   string: string;
@@ -16,6 +22,8 @@ type TypeMap = {
   boolean: boolean;
   date: Date;
   status: Status;
+  Student: Student;
+  Subject: Subject; 
 };
 
 type MyTypeNames = keyof TypeMap;
@@ -31,6 +39,7 @@ type TableStructure = {
   columns: Record<string, ColumnDef>
   pk: string
   uiName: string
+  foreignKeys?: string[]
   endpoint? : string
 }
 
@@ -58,10 +67,11 @@ function defineTable<C extends Record<string, ColumnDef>>(def: {
   columns: C;
   pk: string;
   uiName: string;
+  foreignKeys?: string[];
   endpoint?: string;
 }) { return def; }
 
-const structure = {
+export const structure = {
   tables: {
     students: {
       columns:{
@@ -91,14 +101,13 @@ const structure = {
         pk: 'numero_libreta cod_mat', 
         uiName: 'Enrollment',
         columns: {
-          numero_libreta:  { type: 'string', label: "Número de Libreta / Student ID:", required: true},
-          student_name:    { type: 'string', label: "Nombre de estudiante / Student Name:", deduced: true},
-          cod_mat:         { type: 'string', label: "Código de Materia / Subject Code:", required: true},
-          subject_name:    { type: 'string', label: "Nombre de Materia / Subject Name", deduced: true},
+          student:  { type: 'Student'},
+          subject:  { type: 'Subject'},
           enrollment_date: { type: 'date'  , label: "Fecha de Inscripción / Enrollment Date:", required: true},
           grade:           { type: 'number', label: "Nota / Grade:" },
           status:          { type: 'status', label: "Estado / Status:" }
-        }
+        },
+        foreignKeys: ["subjects", "students"],
     } satisfies TableStructure
   }
 }
@@ -114,14 +123,6 @@ const statusOptions: Record<string, Status[]> = {
     {value:"interrupted", label: "Interrumpido / Interrupted"}
   ]
 }
-
-// Type definitions
-type Student     = InferType<typeof structure.tables.students.columns>;
-type Subject     = InferType<typeof structure.tables.subjects.columns>;
-type Enrollment  = InferType<typeof structure.tables.enrollments.columns>;
-type TableTuple  = Student | Subject | Enrollment;
-type Status      = {value: string, label: string};
-
 
 // DOM elements
 const studentsBtn = document.getElementById('students-btn') as HTMLButtonElement;
@@ -178,6 +179,19 @@ function showSection(section: string) {
       loadEnrollments();
       break;
   }
+}
+
+type DBTable = {
+  tableName: string;
+  tablePks : string[];
+}
+
+function pairForeignKeyRelationsWithPrimaryKeys(foreignKeys?: string[]): DBTable[]{
+  const tableInfo: DBTable[] = []; 
+  const table = structure.tables;
+  foreignKeys?.forEach(foreignKey => tableInfo.push({tableName: foreignKey, 
+                                                    tablePks: table[foreignKey as keyof typeof structure.tables].pk.split(' ')}));
+  return tableInfo;
 }
 
 //Load 
@@ -283,7 +297,9 @@ function editTable(table: TableStructure) {
   return async (...args: string[]) => {
     try {
       const encodedPath = args.map(arg => encodeURIComponent(decodeURIComponent(arg))).join('/');
-      const response: Response = await fetch(`${API_BASE}/${getEndpointFromTable(table)}/${encodedPath}`);
+      const response: Response = await fetch(`${API_BASE}/${getEndpointFromTable(table)}/${encodedPath}`, {
+      body: table.foreignKeys? JSON.stringify(pairForeignKeyRelationsWithPrimaryKeys(table.foreignKeys)) : '' 
+    });
       const jsonResponse = await response.json();
       alert(jsonResponse.message);
       showAnyForm(table, jsonResponse.data);
@@ -306,11 +322,19 @@ function editTable(table: TableStructure) {
   deleteTupleFromTable(structure.tables.enrollments, `${numero_libreta} ${cod_mat}`);
 };
 
+function fieldNamesOfTable(table: TableStructure): string[]{
+  const fieldNames: string[] = [];
+  for (const fieldName in table.columns){
+    fieldNames.push(fieldName);
+  }
+  return fieldNames;
+}
+
 async function deleteTupleFromTable(table: TableStructure, pk: string){
   if (confirm(`¿Está seguro de que desea eliminar este ${table.uiName.toLowerCase()}? / Are you sure you want to delete this ${table.uiName.toLowerCase()}?`)) {
     try {
       const tableElementsName: string = getEndpointFromTable(table);
-      const response: Response = await fetch(`${API_BASE}/${tableElementsName}/${pk.split(' ').join('/')}`, { method: 'DELETE' });
+      const response: Response = await fetch(`${API_BASE}/${tableElementsName}/${pk.split(' ').join('/')}`, { method: 'DELETE', body: JSON.stringify(fieldNamesOfTable(table))});
       const jsonResponse = await response.json();
       alert(jsonResponse.message); 
       loadTableData(table);
@@ -335,7 +359,7 @@ function extractValuesFromForm(table: TableStructure) {
       if (element && element.id && isHTMLInputElement(element)) {
         let value: any = element.value;
         if (element instanceof HTMLInputElement){
-          value = InferTypeFromMyTypes(element); //En el resto de casos nos sirve que quede como string
+          value = inferTypeFromMyTypes(element); //En el resto de casos nos sirve que quede como string
         }
         structureTableData[element.id] = value;
       }
