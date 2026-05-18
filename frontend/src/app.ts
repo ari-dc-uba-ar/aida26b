@@ -304,7 +304,7 @@ function hideForm(form: HTMLElement) {
 function editTable(table: TableStructure) {
   return async (...args: string[]) => {
     try {
-      const encodedPath = args.map(arg => encodeURIComponent(decodeURIComponent(arg))).join('/');
+      const encodedPath = args.map(arg => encodeURIComponent(decodeURIComponent(arg))).join(pkValuesSeparator);
       const response: Response = await fetch(`${API_BASE}/${getEndpointFromTable(table)}/${encodedPath}`);
       const jsonResponse = await response.json();
       alert(jsonResponse.message);

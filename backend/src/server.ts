@@ -144,7 +144,7 @@ app.get('/api/students', async (req, res) => {
 */
 
 //getCompositeTable
-app.get('/api/enrollments', async (req, res) => {
+/*app.get('/api/enrollments', async (req, res) => {
   try {    
     const result = await pool.query(`
       SELECT e.*, s.first_name || ' ' || s.last_name as student_name, sub.name as subject_name
@@ -158,13 +158,26 @@ app.get('/api/enrollments', async (req, res) => {
     console.error('Error fetching enrollments:', error);
     res.status(500).json({success: false, data: "", message: `Internal server: Error fetching enrollments`} );
   }
-});
+}); */
 
 app.get('/api/:singleEntityTable', async (req, res) => {
+  const singleEntityTable: string = req.params.singleEntityTable;
+  const structureTable: Record<string, TableStructure> = structure.tables;
+  let query = "";
+  if (structureTable[singleEntityTable].foreignKeys){
+    query = `
+      SELECT e.*, s.first_name || ' ' || s.last_name as student_name, sub.name as subject_name
+      FROM enrollments e
+      JOIN students s ON e.numero_libreta = s.numero_libreta
+      JOIN subjects sub ON e.cod_mat = sub.cod_mat
+      ORDER BY e.numero_libreta, e.cod_mat
+    `;
+  }
+  else{
+    query = `SELECT * FROM ${singleEntityTable} ORDER BY ${structureTable[singleEntityTable].pk}`;
+  }
   try {
-    const singleEntityTable: string = req.params.singleEntityTable;
-    const structureTable: Record<string, TableStructure> = structure.tables;
-    const result = await pool.query(`SELECT * FROM ${singleEntityTable} ORDER BY ${structureTable[singleEntityTable].pk}`);
+    const result = await pool.query(query);
     res.json({success: true, data: result.rows, message: `${structureTable[singleEntityTable].uiName} table fetched succesfully`});
   } catch (error) {
     const errorMessage = `Error fetching ${req.params.singleEntityTable}:`;
@@ -204,18 +217,21 @@ app.get('/api/students/:numero_libreta', async (req, res) => {
   }
 });*/
 
-app.get('/api/:singleEntityTable/:pk', async (req, res) => {
+app.get('/api/:tableName/:pk', async (req, res) => {
   const structureTable: Record<string, TableStructure> = structure.tables;
-  const { singleEntityTable, pk } = req.params;
-  console.log(singleEntityTable, structureTable[singleEntityTable].pk, pk);
+  const tableName = req.params.tableName;
+  const pkValues  = req.params.pk.split(pkValuesSeparator);
+  const whereArguments = columnNamesEqualsNumber(structureTable[tableName], structureTable[tableName].pk.split(' '), 1, ' AND ');
+  console.log(tableName, structureTable[tableName].pk, pkValues);
+
   try {
-    const result = await pool.query(`SELECT * FROM ${singleEntityTable} WHERE ${structureTable[singleEntityTable].pk} = $1`, [pk]);
+    const result = await pool.query(`SELECT * FROM ${tableName} WHERE ${whereArguments}`, pkValues);
     if (result.rows.length === 0) {
-      return res.status(404).json({success: false, data: "", message: `${structureTable[singleEntityTable].uiName} not found`});
+      return res.status(404).json({success: false, data: "", message: `${structureTable[tableName].uiName} not found`});
     }
-    res.json({success: true, data: result.rows[0], message: `${structureTable[singleEntityTable].uiName} fetched successfully`} );
+    res.json({success: true, data: result.rows[0], message: `${structureTable[tableName].uiName} fetched successfully`} );
   } catch (error) {
-    const errorMessage = `Error fetching ${req.params.singleEntityTable}:`;
+    const errorMessage = `Error fetching ${req.params.tableName}:`;
     console.error(errorMessage, error);
     res.status(500).json({success: false, data: "", message: `Internal server error:` + errorMessage} );
   }
@@ -223,6 +239,7 @@ app.get('/api/:singleEntityTable/:pk', async (req, res) => {
 
 
 //getRowOfCompositeTableByPKs
+/*
 app.get('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
   try {
     const { numero_libreta, cod_mat } = req.params;
@@ -236,7 +253,7 @@ app.get('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
     res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching enrollment`} );
   }
 });
-
+*/
 //Post to generic table
 /*
 app.post('/api/students', async (req, res) => {
