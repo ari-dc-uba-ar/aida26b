@@ -26,6 +26,9 @@ const pool =  new Pool({
 app.use(cors());
 app.use(express.json());
 
+const pkValuesSeparator = "_";
+
+
 // Routes
 type ApiResponse = {
   success: boolean;  
@@ -38,9 +41,9 @@ type InferType<FieldDefs extends Record<string, ColumnDef>> = {
   [K in keyof FieldDefs]: TypeMap[FieldDefs[K]['type']]
 }
 
-type Student     = InferType<typeof structure.tables.students.columns>;
-type Subject     = InferType<typeof structure.tables.subjects.columns>;
-type Enrollment  = InferType<typeof structure.tables.enrollments.columns>;
+type Student     = InferType<typeof structure.tables.students.columnsToDisplay>;
+type Subject     = InferType<typeof structure.tables.subjects.columnsToDisplay>;
+type Enrollment  = InferType<typeof structure.tables.enrollments.columnsToDisplay>;
 type TableTuple  = Student | Subject | Enrollment;
 type Status      = {value: string, label: string};
 
@@ -63,7 +66,8 @@ type ColumnDef = {
 }
 
 type TableStructure = {
-  columns: Record<string, ColumnDef>
+  tableColumns: string[]
+  columnsToDisplay: Record<string, ColumnDef>
   pk: string
   uiName: string
   foreignKeys?: string[]
@@ -73,7 +77,8 @@ type TableStructure = {
 const structure = {
   tables: {
     students: {
-      columns:{
+      tableColumns: ['numero_libreta', 'dni', 'first_name', 'last_name', 'email', 'enrollment_date', 'status'],
+      columnsToDisplay:{
         numero_libreta   :{type: 'string', label: "Número de Libreta / Student ID:", required: true},
         dni              :{type: 'number', label: "DNI:", required: true},
         first_name       :{type: 'string', label: "Nombre / Name:", required: true},
@@ -86,7 +91,8 @@ const structure = {
       uiName: 'Student'
     } satisfies TableStructure,
     subjects: {
-      columns:{
+      tableColumns: ['cod_mat', 'name', 'description', 'credits', 'department'],
+      columnsToDisplay:{
         cod_mat     :{type: 'string', label: "Código de Materia / Subject Code:", required: true},
         name        :{type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
         description :{type: 'string', label: "Descripción de Materia / Subject Description:"},
@@ -99,11 +105,12 @@ const structure = {
     enrollments: {
         pk: 'numero_libreta cod_mat', 
         uiName: 'Enrollment',
-        columns: {
+        tableColumns: ['numero_libreta', 'cod_mat', 'enrollment_date', 'grade', 'status'],
+        columnsToDisplay: {
           numero_libreta:  {type: 'string', label: "Número de Libreta / Student ID:", required: true},
+          student_name:    {type: 'string', label: "Nombre de Estudiante / Student Name:", required: true},
           subject_name:    {type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
-          student_name:    {type: 'string', label: "Código de Materia / Subject Code:", required: true},
-          cod_mat:         {type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
+          cod_mat:         {type: 'string', label: "Código de Materia / Subject Code:", required: true},
           enrollment_date: { type: 'date'  , label: "Fecha de Inscripción / Enrollment Date:", required: true},
           grade:           { type: 'number', label: "Nota / Grade:" },
           status:          { type: 'status', label: "Estado / Status:" }
@@ -293,7 +300,7 @@ app.post('/api/:tableName', async (req, res) => {
 });
 
 function formatTableColumnsForQuery(table: TableStructure, from: number = 1): string[]{
-  let entries = Array.from(Object.keys(table.columns));
+  let entries = table.tableColumns;
   console.log('Table entries: ', entries);
   let tupleWithReplaceParameters = '';
   let columnsCount = from;
@@ -345,22 +352,20 @@ app.put('/api/subjects/:cod_mat', async (req, res) => {
 });
 */
 
-function columnNamesEqualsNumber(table: TableStructure, from: number = 1): [string, number]{
+function columnNamesEqualsNumber(table: TableStructure, columnsNames: string[], from: number = 1, separator: string = ','): string{
   let res: string = '';
   let i: number   = from;
-  for (let column in table.columns){
-    if (!table.pk.includes(column)){
-      res += `${column} = $${i++},`;
-    }
-  }
-  return [res.slice(0, -1), i];
+  columnsNames.forEach(columnName => {
+    res += `${columnName} = $${i++}` + separator;
+  })
+  return res.slice(0, -separator.length);
 }
 
 app.put('/api/:tableName/:pk', async (req, res) => {
   const { tableName, pk } = req.params;
   const structureTable: Record<string, TableStructure> = structure.tables;
   const values = Object.values(req.body);
-  const [setArgumentsString, argumentsCount] = columnNamesEqualsNumber(structureTable[tableName], 2);
+  const setArgumentsString = columnNamesEqualsNumber(structureTable[tableName], structureTable[tableName].tableColumns, 2);
   try {
   const result = await pool.query(
       `UPDATE ${tableName} SET ${setArgumentsString} WHERE ${structureTable[tableName].pk} = $1 RETURNING *`,
@@ -428,10 +433,15 @@ app.delete('/api/subjects/:cod_mat', async (req, res) => {
 });*/
 
 app.delete('/api/:tableName/:pk', async (req, res) => {
+  const structureTable: Record<string, TableStructure> = structure.tables;
+  const tableName = req.params.tableName;
+  const pkValues  = req.params.pk.split(pkValuesSeparator);
+  const whereArguments = columnNamesEqualsNumber(structureTable[tableName], structureTable[tableName].pk.split(' '), 1, ' AND '); 
+  console.log(pkValues);
+  console.log(structureTable[tableName].pk.split(' '));
+  console.log(whereArguments);
   try {
-    const structureTable: Record<string, TableStructure> = structure.tables;
-    const { tableName, pk } = req.params;
-    const result = await pool.query(`DELETE FROM ${tableName} WHERE ${structureTable[tableName].pk} = $2 RETURNING *`, [pk]);
+    const result    = await pool.query(`DELETE FROM ${tableName} WHERE ${whereArguments} RETURNING *`, pkValues);
     if (result.rows.length === 0) {
       return res.status(404).json({success: false, data: "", message: `${tableName} not found`} );
     }
@@ -443,6 +453,8 @@ app.delete('/api/:tableName/:pk', async (req, res) => {
   }
 });
 
+
+/*
 app.delete('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
   try {
     const { numero_libreta, cod_mat } = req.params;
@@ -456,7 +468,7 @@ app.delete('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
     res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting enrollment`} );
   }
 });
-
+*/
 /*
 app.delete('/api/:table/:pks', async (req, res) => {
   try {

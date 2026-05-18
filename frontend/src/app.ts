@@ -10,9 +10,9 @@ type ApiResponse = {
 };
 
 // Type definitions
-type Student     = InferType<typeof structure.tables.students.columns>;
-type Subject     = InferType<typeof structure.tables.subjects.columns>;
-type Enrollment  = InferType<typeof structure.tables.enrollments.columns>;
+type Student     = InferType<typeof structure.tables.students.columnsToDisplay>;
+type Subject     = InferType<typeof structure.tables.subjects.columnsToDisplay>;
+type Enrollment  = InferType<typeof structure.tables.enrollments.columnsToDisplay>;
 type TableTuple  = Student | Subject | Enrollment;
 type Status      = {value: string, label: string};
 
@@ -36,7 +36,8 @@ type ColumnDef = {
 }
 
 type TableStructure = {
-  columns: Record<string, ColumnDef>
+  tableColumns: string[]
+  columnsToDisplay: Record<string, ColumnDef>
   pk: string
   uiName: string
   foreignKeys?: string[]
@@ -74,7 +75,8 @@ function defineTable<C extends Record<string, ColumnDef>>(def: {
 export const structure = {
   tables: {
     students: {
-      columns:{
+      tableColumns: ['numero_libreta', 'dni', 'first_name', 'last_name', 'email', 'enrollment_date', 'status'],
+      columnsToDisplay:{
         numero_libreta   :{type: 'string', label: "Número de Libreta / Student ID:", required: true},
         dni              :{type: 'number', label: "DNI:", required: true},
         first_name       :{type: 'string', label: "Nombre / Name:", required: true},
@@ -87,7 +89,8 @@ export const structure = {
       uiName: 'Student'
     } satisfies TableStructure,
     subjects: {
-      columns:{
+      tableColumns: ['cod_mat', 'name', 'description', 'credits', 'department'],
+      columnsToDisplay:{
         cod_mat     :{type: 'string', label: "Código de Materia / Subject Code:", required: true},
         name        :{type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
         description :{type: 'string', label: "Descripción de Materia / Subject Description:"},
@@ -100,7 +103,8 @@ export const structure = {
     enrollments: {
         pk: 'numero_libreta cod_mat', 
         uiName: 'Enrollment',
-        columns: {
+        tableColumns: ['numero_libreta', 'cod_mat', 'enrollment_date', 'grade', 'status'],
+        columnsToDisplay: {
           numero_libreta:  {type: 'string', label: "Número de Libreta / Student ID:", required: true},
           student_name:    {type: 'string', label: "Nombre de Estudiante / Student Name:", required: true},
           subject_name:    {type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
@@ -125,6 +129,8 @@ const statusOptions: Record<string, Status[]> = {
     {value:"interrupted", label: "Interrumpido / Interrupted"}
   ]
 }
+
+const pkValuesSeparator = "_";
 
 // DOM elements
 const studentsBtn = document.getElementById('students-btn') as HTMLButtonElement;
@@ -225,7 +231,7 @@ function renderAnyTable(tableElement: HTMLTableElement, tableStructure: TableStr
     const pkValue: string[] = pk.split(' ').map(elem => String(encodeURIComponent(record[elem]) ?? ''));
     const row = document.createElement('tr');
     
-    Object.entries(tableStructure.columns).forEach(([name]) => {
+    Object.entries(tableStructure.columnsToDisplay).forEach(([name]) => {
         const tdElement       = document.createElement("td"); 
         tdElement.textContent = `${record[name] || ''}`;
         row.appendChild(tdElement);
@@ -322,19 +328,12 @@ function editTable(table: TableStructure) {
   deleteTupleFromTable(structure.tables.enrollments, `${numero_libreta} ${cod_mat}`);
 };
 
-function fieldNamesOfTable(table: TableStructure): string[]{
-  const fieldNames: string[] = [];
-  for (const fieldName in table.columns){
-    fieldNames.push(fieldName);
-  }
-  return fieldNames;
-}
 
 async function deleteTupleFromTable(table: TableStructure, pk: string){
   if (confirm(`¿Está seguro de que desea eliminar este ${table.uiName.toLowerCase()}? / Are you sure you want to delete this ${table.uiName.toLowerCase()}?`)) {
     try {
       const tableElementsName: string = getEndpointFromTable(table);
-      const response: Response = await fetch(`${API_BASE}/${tableElementsName}/${pk.split(' ').join('/')}`, { method: 'DELETE'});
+      const response: Response = await fetch(`${API_BASE}/${tableElementsName}/${pk.split(' ').join(pkValuesSeparator)}`, { method: 'DELETE'});
       const jsonResponse = await response.json();
       alert(jsonResponse.message); 
       loadTableData(table);
@@ -439,7 +438,7 @@ async function showAnyForm(table: TableStructure, entity?: TableTuple) {
   formHeader.textContent = `${isEdit ? 'Edit ' + table.uiName : 'Add ' + table.uiName}`;
   form.appendChild(formHeader);
   //Add inputs
-  for (const [field, columnDef] of Object.entries(table.columns)) {
+  for (const [field, columnDef] of Object.entries(table.columnsToDisplay)) {
       inputFor(table.uiName, form, columnDef, field, isEdit, table.pk, entity);
   }
   //Add buttons
