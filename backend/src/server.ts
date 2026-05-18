@@ -26,6 +26,91 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+type ApiResponse = {
+  success: boolean;  
+  data: Record<string, any>[];
+  message: string;
+};
+
+// Type definitions
+type InferType<FieldDefs extends Record<string, ColumnDef>> = {
+  [K in keyof FieldDefs]: TypeMap[FieldDefs[K]['type']]
+}
+
+type Student     = InferType<typeof structure.tables.students.columns>;
+type Subject     = InferType<typeof structure.tables.subjects.columns>;
+type Enrollment  = InferType<typeof structure.tables.enrollments.columns>;
+type TableTuple  = Student | Subject | Enrollment;
+type Status      = {value: string, label: string};
+
+
+type TypeMap = {
+  string: string;
+  number: number;
+  boolean: boolean;
+  date: Date;
+  status: Status
+};
+
+type MyTypeNames = keyof TypeMap;
+
+type ColumnDef = {
+  type: MyTypeNames;
+  label?: string;
+  required?: boolean;
+  deduced?: boolean
+}
+
+type TableStructure = {
+  columns: Record<string, ColumnDef>
+  pk: string
+  uiName: string
+  foreignKeys?: string[]
+  endpoint? : string
+}
+
+const structure = {
+  tables: {
+    students: {
+      columns:{
+        numero_libreta   :{type: 'string', label: "Número de Libreta / Student ID:", required: true},
+        dni              :{type: 'number', label: "DNI:", required: true},
+        first_name       :{type: 'string', label: "Nombre / Name:", required: true},
+        last_name        :{type: 'string', label: "Apellido / Last name:", required: true},
+        email            :{type: 'string', label: "Email:"},
+        enrollment_date  :{type: 'date'  , label: "Fecha de inscripción / Enrollment Date:"},
+        status           :{type: 'status', label: "Estado / Status:"},
+      },
+      pk: 'numero_libreta',
+      uiName: 'Student'
+    } satisfies TableStructure,
+    subjects: {
+      columns:{
+        cod_mat     :{type: 'string', label: "Código de Materia / Subject Code:", required: true},
+        name        :{type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
+        description :{type: 'string', label: "Descripción de Materia / Subject Description:"},
+        credits     :{type: 'number', label: "Créditos / Credits:"},
+        department  :{type: 'string', label: "Departamento / Department:"},
+      },
+      pk: 'cod_mat',
+      uiName: 'Subject'
+    } satisfies TableStructure,
+    enrollments: {
+        pk: 'numero_libreta cod_mat', 
+        uiName: 'Enrollment',
+        columns: {
+          numero_libreta:  {type: 'string', label: "Número de Libreta / Student ID:", required: true},
+          subject_name:    {type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
+          student_name:    {type: 'string', label: "Código de Materia / Subject Code:", required: true},
+          cod_mat:         {type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
+          enrollment_date: { type: 'date'  , label: "Fecha de Inscripción / Enrollment Date:", required: true},
+          grade:           { type: 'number', label: "Nota / Grade:" },
+          status:          { type: 'status', label: "Estado / Status:" }
+        },
+        foreignKeys: ["subjects", "students"],
+    } satisfies TableStructure
+  }
+}
 
 //getGenericTable
 app.get('/api/subjects', async (req, res) => {
@@ -35,6 +120,18 @@ app.get('/api/subjects', async (req, res) => {
   } catch (error) {
     console.error('Error fetching subject:', error);
     res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching subjects`} );
+  }
+});
+
+app.get('/api/:singleEntityTable', async (req, res) => {
+  try {
+    const singleEntityTable: string = req.params.singleEntityTable;
+    const structureTable: TableStructure = structure.tables[singleEntityTable];
+    const result = await pool.query(`SELECT * FROM ${singleEntityTable} ORDER BY numero_libreta`);
+    res.json({success: true, data: result.rows, message: "Students table fetched succesfully"});
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    res.status(500).json({success: false, data: "", message: 'Internal server error: Error fetching students'});
   }
 });
 
