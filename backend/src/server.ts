@@ -228,7 +228,7 @@ app.get('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
 });
 
 //Post to generic table
-
+/*
 app.post('/api/students', async (req, res) => {
   try {
     const { numero_libreta, dni, first_name, last_name, email, enrollment_date, status } = req.body;
@@ -269,7 +269,42 @@ app.post('/api/enrollments', async (req, res) => {
     console.error('Error creating enrollment:', error);
     res.status(500).json({success: false, data: "", message: `Internal server error: Error creating enrollment`} );
   }
+});*/
+
+app.post('/api/:tableName', async (req, res) => {
+  try {
+    const structureTable: Record<string, TableStructure> = structure.tables;
+    const tableName = req.params.tableName;
+    const valuess = [tableName].concat(Object.values(req.body));
+    const [tupleWithTableColumnsNames, tupleWithReplaceParameters] = formatTableColumnsForQuert(structureTable[tableName], 2);
+    const result = await pool.query(
+      `INSERT INTO $1 ${tupleWithTableColumnsNames} VALUES ${tupleWithReplaceParameters} RETURNING *`, valuess
+    );
+    res.status(201).json({success: true, data: result.rows[0], message: `${tableName} created succesfully`} );
+  } catch (error) {
+    const errorMessage = `Error creating ${req.params.tableName}:`;
+    console.error(errorMessage, error);
+    res.status(500).json({success: false, data: "", message: `Internal server error: ` + errorMessage} );
+  }
 });
+
+
+function formatTableColumnsForQuert(table: TableStructure, from: number = 1): string[]{
+  let entries = Array.from(Object.entries(table.columns).keys());
+  let tupleWithReplaceParameters = '';
+  let columnsCount = from;
+  entries.forEach(_ => {
+    tupleWithReplaceParameters += `$${columnsCount} `;
+    columnsCount++;
+  });
+  tupleWithReplaceParameters = '(' + tupleWithReplaceParameters.split(' ').join(',') + ')';
+  let tupleContent: string = '(' + entries.join(',') + ')';
+  return [tupleContent, tupleWithReplaceParameters];
+}
+
+
+
+
 
 //Put
 

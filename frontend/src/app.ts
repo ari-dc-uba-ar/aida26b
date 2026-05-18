@@ -102,9 +102,9 @@ export const structure = {
         uiName: 'Enrollment',
         columns: {
           numero_libreta:  {type: 'string', label: "Número de Libreta / Student ID:", required: true},
+          student_name:    {type: 'string', label: "Nombre de Estudiante / Student Name:", required: true},
           subject_name:    {type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
-          student_name:    {type: 'string', label: "Código de Materia / Subject Code:", required: true},
-          cod_mat:         {type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
+          cod_mat:         {type: 'string', label: "Código de Materia / Subject Code:", required: true},
           enrollment_date: { type: 'date'  , label: "Fecha de Inscripción / Enrollment Date:", required: true},
           grade:           { type: 'number', label: "Nota / Grade:" },
           status:          { type: 'status', label: "Estado / Status:" }
