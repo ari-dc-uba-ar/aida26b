@@ -26,6 +26,18 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+
+//getGenericTable
+app.get('/api/subjects', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM subjects ORDER BY cod_mat');
+    res.json({success: true, data: result.rows, message: `Subjects table fetched successfully`} );
+  } catch (error) {
+    console.error('Error fetching subject:', error);
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching subjects`} );
+  }
+});
+
 app.get('/api/students', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM students ORDER BY numero_libreta');
@@ -36,6 +48,38 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
+
+//getCompositeTable
+app.get('/api/enrollments', async (req, res) => {
+  try {    
+    const result = await pool.query(`
+      SELECT e.*, s.first_name || ' ' || s.last_name as student_name, sub.name as subject_name
+      FROM enrollments e
+      JOIN students s ON e.numero_libreta = s.numero_libreta
+      JOIN subjects sub ON e.cod_mat = sub.cod_mat
+      ORDER BY e.numero_libreta, e.cod_mat
+    `);
+    res.json({success: true, data: result.rows, message: `Enrollments fetched succesfully`} );
+  } catch (error) {
+    console.error('Error fetching enrollments:', error);
+    res.status(500).json({success: false, data: "", message: `Internal server: Error fetching enrollments`} );
+  }
+});
+
+//getRowOfGenericTableByPrimaryKey
+app.get('/api/subjects/:cod_mat', async (req, res) => {
+  try {
+    const { cod_mat } = req.params;
+    const result = await pool.query('SELECT * FROM subjects WHERE cod_mat = $1', [cod_mat]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({success: false, data: "", message: `Subject not found`} );
+    }
+    res.json({success: true, data: result.rows[0], message: `Subject fetched successfully`} );
+  } catch (error) {
+    console.error('Error fetching subject:', error);
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching subject`} );
+  }
+});
 
 app.get('/api/students/:numero_libreta', async (req, res) => {
   try {
@@ -51,6 +95,23 @@ app.get('/api/students/:numero_libreta', async (req, res) => {
   }
 });
 
+//getRowOfCompositeTableByPKs
+app.get('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
+  try {
+    const { numero_libreta, cod_mat } = req.params;
+    const result = await pool.query('SELECT * FROM enrollments WHERE numero_libreta = $1 AND cod_mat = $2', [numero_libreta, cod_mat]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({success: false, data: "", message: `Internal server error: Enrollment not found`} );
+    }
+    res.json({success: true, data: result.rows[0], message: `Enrollment found`} );
+  } catch (error) {
+    console.error('Error fetching enrollment:', error);
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching enrollment`} );
+  }
+});
+
+//Post to generic table
+
 app.post('/api/students', async (req, res) => {
   try {
     const { numero_libreta, dni, first_name, last_name, email, enrollment_date, status } = req.body;
@@ -64,6 +125,36 @@ app.post('/api/students', async (req, res) => {
     res.status(500).json({success: false, data: "", message: `Internal server error: Error creating student`} );
   }
 });
+
+app.post('/api/subjects', async (req, res) => {
+  try {
+    const { cod_mat, name, description, credits, department } = req.body;
+    const result = await pool.query(
+      'INSERT INTO subjects (cod_mat, name, description, credits, department) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [cod_mat, name, description, credits, department]
+    );
+    res.status(201).json({success: false, data: result.rows[0], message: `Subject created succefully`} );
+  } catch (error) {
+    console.error('Error creating subject:', error);
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error creating subject`} );
+  }
+});
+
+app.post('/api/enrollments', async (req, res) => {
+  try {
+    const { numero_libreta, cod_mat, enrollment_date, grade, status } = req.body;
+    const result = await pool.query(
+      'INSERT INTO enrollments (numero_libreta, cod_mat, enrollment_date, grade, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [numero_libreta, cod_mat, enrollment_date, grade, status]
+    );
+    res.status(201).json({success: true, data: result.rows[0], message: `Enrollment created succesfully`} );
+  } catch (error) {
+    console.error('Error creating enrollment:', error);
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error creating enrollment`} );
+  }
+});
+
+//Put
 
 app.put('/api/students/:numero_libreta', async (req, res) => {
   try {
@@ -80,59 +171,6 @@ app.put('/api/students/:numero_libreta', async (req, res) => {
   } catch (error) {
     console.error('Error updating student:', error);
     res.status(500).json({success: false, data: "", message: `Internal server error: Error updating student`} );
-  }
-});
-
-app.delete('/api/students/:numero_libreta', async (req, res) => {
-  try {
-    const { numero_libreta } = req.params;
-    const result = await pool.query('DELETE FROM students WHERE numero_libreta = $1 RETURNING *', [numero_libreta]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({success: false, data: "", message: `Student not found`} );
-    }
-    res.json({success: true, data: "", message: `Student deleted successfully`} );
-  } catch (error) {
-    console.error('Error deleting student:', error);
-    res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting student`} );
-  }
-});
-
-// Subjects routes
-app.get('/api/subjects', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM subjects ORDER BY cod_mat');
-    res.json({success: true, data: result.rows, message: `Subjects table fetched successfully`} );
-  } catch (error) {
-    console.error('Error fetching subject:', error);
-    res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching subjects`} );
-  }
-});
-
-app.get('/api/subjects/:cod_mat', async (req, res) => {
-  try {
-    const { cod_mat } = req.params;
-    const result = await pool.query('SELECT * FROM subjects WHERE cod_mat = $1', [cod_mat]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({success: false, data: "", message: `Subject not found`} );
-    }
-    res.json({success: true, data: result.rows[0], message: `Subject fetched successfully`} );
-  } catch (error) {
-    console.error('Error fetching subject:', error);
-    res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching subject`} );
-  }
-});
-
-app.post('/api/subjects', async (req, res) => {
-  try {
-    const { cod_mat, name, description, credits, department } = req.body;
-    const result = await pool.query(
-      'INSERT INTO subjects (cod_mat, name, description, credits, department) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [cod_mat, name, description, credits, department]
-    );
-    res.status(201).json({success: false, data: result.rows[0], message: `Subject created succefully`} );
-  } catch (error) {
-    console.error('Error creating subject:', error);
-    res.status(500).json({success: false, data: "", message: `Internal server error: Error creating subject`} );
   }
 });
 
@@ -154,65 +192,6 @@ app.put('/api/subjects/:cod_mat', async (req, res) => {
   }
 });
 
-app.delete('/api/subjects/:cod_mat', async (req, res) => {
-  try {
-    const { cod_mat } = req.params;
-    const result = await pool.query('DELETE FROM subjects WHERE cod_mat = $1 RETURNING *', [cod_mat]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({success: false, data: "", message: `Subject not found`} );
-    }
-    res.json({success: true, data: "", message: `Subject deleted successfully`} );
-  } catch (error) {
-    console.error('Error deleting subject:', error);
-    res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting subject`} );
-  }
-});
-
-// Enrollments routes
-app.get('/api/enrollments', async (req, res) => {
-  try {    
-    const result = await pool.query(`
-      SELECT e.*, s.first_name || ' ' || s.last_name as student_name, sub.name as subject_name
-      FROM enrollments e
-      JOIN students s ON e.numero_libreta = s.numero_libreta
-      JOIN subjects sub ON e.cod_mat = sub.cod_mat
-      ORDER BY e.numero_libreta, e.cod_mat
-    `);
-    res.json({success: true, data: result.rows, message: `Enrollments fetched succesfully`} );
-  } catch (error) {
-    console.error('Error fetching enrollments:', error);
-    res.status(500).json({success: false, data: "", message: `Internal server: Error fetching enrollments`} );
-  }
-});
-
-app.get('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
-  try {
-    const { numero_libreta, cod_mat } = req.params;
-    const result = await pool.query('SELECT * FROM enrollments WHERE numero_libreta = $1 AND cod_mat = $2', [numero_libreta, cod_mat]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({success: false, data: "", message: `Internal server error: Enrollment not found`} );
-    }
-    res.json({success: true, data: result.rows[0], message: `Enrollment found`} );
-  } catch (error) {
-    console.error('Error fetching enrollment:', error);
-    res.status(500).json({success: false, data: "", message: `Internal server error: Error fetching enrollment`} );
-  }
-});
-
-app.post('/api/enrollments', async (req, res) => {
-  try {
-    const { numero_libreta, cod_mat, enrollment_date, grade, status } = req.body;
-    const result = await pool.query(
-      'INSERT INTO enrollments (numero_libreta, cod_mat, enrollment_date, grade, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [numero_libreta, cod_mat, enrollment_date, grade, status]
-    );
-    res.status(201).json({success: true, data: result.rows[0], message: `Enrollment created succesfully`} );
-  } catch (error) {
-    console.error('Error creating enrollment:', error);
-    res.status(500).json({success: false, data: "", message: `Internal server error: Error creating enrollment`} );
-  }
-});
-
 app.put('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
   try {
     const { numero_libreta, cod_mat } = req.params;
@@ -228,6 +207,37 @@ app.put('/api/enrollments/:numero_libreta/:cod_mat', async (req, res) => {
   } catch (error) {
     console.error('Error updating enrollment:', error);
     res.status(500).json({success: false, data: "", message: `Internal server error: Error updating enrollment`} );
+  }
+});
+
+//Delete
+
+app.delete('/api/students/:numero_libreta', async (req, res) => {
+  try {
+    const { numero_libreta } = req.params;
+    const result = await pool.query('DELETE FROM students WHERE numero_libreta = $1 RETURNING *', [numero_libreta]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({success: false, data: "", message: `Student not found`} );
+    }
+    res.json({success: true, data: "", message: `Student deleted successfully`} );
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting student`} );
+  }
+});
+
+
+app.delete('/api/subjects/:cod_mat', async (req, res) => {
+  try {
+    const { cod_mat } = req.params;
+    const result = await pool.query('DELETE FROM subjects WHERE cod_mat = $1 RETURNING *', [cod_mat]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({success: false, data: "", message: `Subject not found`} );
+    }
+    res.json({success: true, data: "", message: `Subject deleted successfully`} );
+  } catch (error) {
+    console.error('Error deleting subject:', error);
+    res.status(500).json({success: false, data: "", message: `Internal server error: Error deleting subject`} );
   }
 });
 
