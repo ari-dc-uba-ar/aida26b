@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "es2020",
+    "target": "ES2022",
+    "module": "nodenext",
     "lib": ["ES2020"],
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "../",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -12,8 +12,8 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "noEmit": true, 
-    "moduleResolution": "bundler"
+    "moduleResolution": "nodenext"
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../shared"],
   "exclude": ["node_modules", "dist"]
 }

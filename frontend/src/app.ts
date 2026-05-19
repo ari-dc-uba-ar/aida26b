@@ -1,52 +1,12 @@
 // Main application file
 // Code and comments in English
+import type { ColumnDef } from "../../shared/types/tableTypes";
+import type { Status, Student, Subject, Enrollment, TableTuple } from "../../shared/types/domainTypes";
+import type { TableStructure } from "../../shared/types/tableTypes";
+import { structure } from "../../shared/structure/structure";
+import type { ApiResponse } from "../../shared/types/apiTypes";
 
 const API_BASE = '/api';
-
-type ApiResponse = {
-  success: boolean;  
-  data: Record<string, any>[];
-  message: string;
-};
-
-// Type definitions
-type Student     = InferType<typeof structure.tables.students.columnsToDisplay>;
-type Subject     = InferType<typeof structure.tables.subjects.columnsToDisplay>;
-type Enrollment  = InferType<typeof structure.tables.enrollments.columnsToDisplay>;
-type TableTuple  = Student | Subject | Enrollment;
-type Status      = {value: string, label: string};
-
-type TypeMap = {
-  string: string;
-  number: number;
-  boolean: boolean;
-  date: Date;
-  status: Status;
-  Student: Student;
-  Subject: Subject; 
-};
-
-type MyTypeNames = keyof TypeMap;
-
-type ColumnDef = {
-  type: MyTypeNames;
-  label?: string;
-  required?: boolean;
-  deduced?: boolean
-}
-
-type TableStructure = {
-  tableColumns: string[]
-  columnsToDisplay: Record<string, ColumnDef>
-  pk: string
-  uiName: string
-  foreignKeys?: string[]
-  endpoint? : string
-}
-
-type InferType<FieldDefs extends Record<string, ColumnDef>> = {
-  [K in keyof FieldDefs]: TypeMap[FieldDefs[K]['type']]
-}
 
 function inferTypeFromMyTypes(element: any){
   let value: string|number|boolean|Date = element.value;
@@ -71,52 +31,6 @@ function defineTable<C extends Record<string, ColumnDef>>(def: {
   foreignKeys?: string[];
   endpoint?: string;
 }) { return def; }
-
-export const structure = {
-  tables: {
-    students: {
-      tableColumns: ['numero_libreta', 'dni', 'first_name', 'last_name', 'email', 'enrollment_date', 'status'],
-      columnsToDisplay:{
-        numero_libreta   :{type: 'string', label: "Número de Libreta / Student ID:", required: true},
-        dni              :{type: 'number', label: "DNI:", required: true},
-        first_name       :{type: 'string', label: "Nombre / Name:", required: true},
-        last_name        :{type: 'string', label: "Apellido / Last name:", required: true},
-        email            :{type: 'string', label: "Email:"},
-        enrollment_date  :{type: 'date'  , label: "Fecha de inscripción / Enrollment Date:"},
-        status           :{type: 'status', label: "Estado / Status:"},
-      },
-      pk: 'numero_libreta',
-      uiName: 'Student'
-    } satisfies TableStructure,
-    subjects: {
-      tableColumns: ['cod_mat', 'name', 'description', 'credits', 'department'],
-      columnsToDisplay:{
-        cod_mat     :{type: 'string', label: "Código de Materia / Subject Code:", required: true},
-        name        :{type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
-        description :{type: 'string', label: "Descripción de Materia / Subject Description:"},
-        credits     :{type: 'number', label: "Créditos / Credits:"},
-        department  :{type: 'string', label: "Departamento / Department:"},
-      },
-      pk: 'cod_mat',
-      uiName: 'Subject'
-    } satisfies TableStructure,
-    enrollments: {
-        pk: 'numero_libreta cod_mat', 
-        uiName: 'Enrollment',
-        tableColumns: ['numero_libreta', 'cod_mat', 'enrollment_date', 'grade', 'status'],
-        columnsToDisplay: {
-          numero_libreta:  {type: 'string', label: "Número de Libreta / Student ID:", required: true},
-          student_name:    {type: 'string', label: "Nombre de Estudiante / Student Name:", required: true},
-          subject_name:    {type: 'string', label: "Nombre de Materia / Subject Name:", required: true},
-          cod_mat:         {type: 'string', label: "Código de Materia / Subject Code:", required: true},
-          enrollment_date: { type: 'date'  , label: "Fecha de Inscripción / Enrollment Date:", required: true},
-          grade:           { type: 'number', label: "Nota / Grade:" },
-          status:          { type: 'status', label: "Estado / Status:" }
-        },
-        foreignKeys: ["subjects", "students"],
-    } satisfies TableStructure
-  }
-}
 
 const statusOptions: Record<string, Status[]> = {
   Enrollment:[
@@ -187,19 +101,6 @@ function showSection(section: string) {
       loadEnrollments();
       break;
   }
-}
-
-type DBTable = {
-  tableName: string;
-  tablePks : string[];
-}
-
-function pairForeignKeyRelationsWithPrimaryKeys(foreignKeys?: string[]): DBTable[]{
-  const tableInfo: DBTable[] = []; 
-  const table = structure.tables;
-  foreignKeys?.forEach(foreignKey => tableInfo.push({tableName: foreignKey, 
-                                                    tablePks: table[foreignKey as keyof typeof structure.tables].pk.split(' ')}));
-  return tableInfo;
 }
 
 //Load 
