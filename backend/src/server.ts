@@ -1,27 +1,41 @@
 import express from 'express';
 import cors from 'cors';
-import { Pool } from 'pg';
-import dotenv from 'dotenv';
 import path from 'path';
-
-// Load environment variables
-dotenv.config();
+import { pool } from './db';
+import { assertSchemaInSync } from './schema-lock';
+import { DEFAULT_MIGRATIONS_DIR } from './migration-files';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Database connection
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-});
-
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Gate every /api/* route on the database schema being in sync with the
+// migrations on disk. The schema-lock detail (filenames, commands) is
+// logged for the operator but not exposed to the client.
+async function requireSchemaInSync(req: express.Request, res: express.Response, next: express.NextFunction) {
+  try {
+    await assertSchemaInSync(pool, DEFAULT_MIGRATIONS_DIR);
+    next();
+  } catch (err) {
+    console.error('[schema-lock] blocked request:\n' + (err as Error).message);
+    res.status(503).json({ error: 'Service temporarily unavailable. Please try again later.' });
+  }
+}
+
+app.get('/api/health', async (req, res) => {
+  try {
+    await assertSchemaInSync(pool, DEFAULT_MIGRATIONS_DIR);
+    res.json({ status: 'ok' });
+  } catch (err) {
+    console.error('[schema-lock] health check failed:\n' + (err as Error).message);
+    res.status(503).json({ status: 'error' });
+  }
+});
+
+app.use('/api', requireSchemaInSync);
 
 // Routes
 app.get('/api/students', async (req, res) => {

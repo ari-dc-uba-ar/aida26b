@@ -3,6 +3,63 @@
 
 const API_BASE = '/api';
 
+function showApiError(hideApp: boolean): void {
+  const banner = document.getElementById('api-error-banner');
+  if (banner) {
+    banner.innerHTML = '';
+
+    const title = document.createElement('strong');
+    title.textContent = hideApp
+      ? 'El sistema no está disponible / The system is currently unavailable'
+      : 'No se pudo completar la acción / Action could not be completed';
+    banner.appendChild(title);
+
+    const message = document.createElement('p');
+    message.style.margin = '4px 0 0';
+    message.textContent = hideApp
+      ? 'Estamos teniendo problemas para conectarnos con el servidor. Por favor intentá nuevamente en unos minutos. Si el problema persiste, contactá al administrador. / We are having trouble reaching the server. Please try again in a few minutes. If the issue persists, contact the administrator.'
+      : 'Algo salió mal con tu pedido. Verificá los datos e intentá de nuevo. / Something went wrong with your request. Check the data and try again.';
+    banner.appendChild(message);
+
+    if (hideApp) {
+      const retry = document.createElement('button');
+      retry.textContent = 'Reintentar / Retry';
+      retry.style.marginTop = '12px';
+      retry.addEventListener('click', () => {
+        retry.disabled = true;
+        retry.textContent = 'Reintentando… / Retrying…';
+        retry.style.opacity = '0.6';
+        retry.style.cursor = 'wait';
+        loadTableData(activeTableKey);
+      });
+      banner.appendChild(retry);
+    }
+
+    banner.style.display = 'block';
+  }
+  if (hideApp) {
+    const container = document.querySelector('.container') as HTMLElement | null;
+    if (container) container.style.display = 'none';
+  }
+}
+
+function hideApiError(): void {
+  const banner = document.getElementById('api-error-banner');
+  if (banner) banner.style.display = 'none';
+  const container = document.querySelector('.container') as HTMLElement | null;
+  if (container) container.style.display = '';
+}
+
+async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  const response = await fetch(`${API_BASE}${path}`, init);
+  if (!response.ok) {
+    showApiError(response.status === 503);
+    throw new Error(`HTTP ${response.status}`);
+  }
+  hideApiError();
+  return response;
+}
+
 
 
 type TypeMap = {
@@ -197,7 +254,7 @@ function showSection(section: TableKey) {
 //Load 
 async function loadTableData<K extends TableKey>(tableKey: K) {    
   try {
-    const response = await fetch(`${API_BASE}/${tableKey}`);
+    const response = await apiFetch(`/${tableKey}`);
     const data = (await response.json()) as TableRecordMap[K][];
     renderAnyTable(tableKey, data);
   } catch (error) {
@@ -380,7 +437,7 @@ async function showAnyForm<K extends TableKey>(tableKey: K, record?: Partial<Tab
       : '';
 
     try {
-      await fetch(`${API_BASE}/${tableKey}${pkPath}`, {
+      await apiFetch(`/${tableKey}${pkPath}`, {
         method: isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -406,7 +463,7 @@ window.hideAnyForm = hideAnyForm;
 
 window.editRecord = async <K extends TableKey>(tableKey: K, ...pkValues: string[]) => {
   try {
-    const response = await fetch(`${API_BASE}/${tableKey}${getRecordPath(pkValues)}`);
+    const response = await apiFetch(`/${tableKey}${getRecordPath(pkValues)}`);
     const record = (await response.json()) as TableRecordMap[K];
     showAnyForm(tableKey, record);
   } catch (error) {
@@ -417,7 +474,7 @@ window.deleteRecord = async <K extends TableKey>(tableKey: K, ...pkValues: strin
   const tableConfig = structure.tables[tableKey];
   if (confirm(`¿Está seguro de que desea eliminar este ${tableConfig.uiName.toLowerCase()}? / Are you sure you want to delete this ${tableConfig.uiName.toLowerCase()}?`)) {
     try {
-      await fetch(`${API_BASE}/${tableKey}${getRecordPath(pkValues)}`, { method: 'DELETE' });
+      await apiFetch(`/${tableKey}${getRecordPath(pkValues)}`, { method: 'DELETE' });
       loadTableData(tableKey);
     } catch (error) {
       console.error(`Error deleting ${tableKey}:`, error);
