@@ -1,6 +1,6 @@
 import { Pool } from "pg";
-import { structure } from "./ssot/structure";
-import type { TableKey, ColumnDef, TableStructure, Response} from "./types/types";
+import { structure } from "../../shared/src/ssot/structure";
+import type { TableKey, ColumnDef, TableStructure, Response} from "../../shared/src/types/types";
 
 
 function getRequiredFields(tableName: TableKey){

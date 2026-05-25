@@ -1,6 +1,6 @@
 import { isValidTable, incorrectAmountOfPKParameters, invalidFieldNames, invalidPKFieldNames, notTryingToModifyDerivableValue, requiredFieldsEnoughValuesForRequiredFields} from "./validations";
 import express from 'express';
-import type { TableKey } from "./types/types";
+import type { TableKey } from "../../shared/src/types/types";
 import { getNotDerivableFields } from "./helpers";
 import {sendInvalidInstanceMessage, sendNotFoundMessage} from "./statusMessages";
 

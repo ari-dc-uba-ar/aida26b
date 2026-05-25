@@ -1,8 +1,8 @@
 // Main application file
 // Code and comments in English
-import type {TableKey, TableRecordMap, TableStructure, InferType, ColumnDef, Response} from './types/types.ts';
-import {getPkFields} from './utils/utils.js';
-import { structure } from "./ssot/structure.js";
+import type {TableKey, TableRecordMap, TableStructure, InferType, ColumnDef, Response} from '@shared/types/types';
+import {getPkFields} from '@shared/utils/utils';
+import { structure } from "@shared/ssot/structure";
 
 
 const API_BASE = '/api';

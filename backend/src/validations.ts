@@ -1,6 +1,6 @@
-import { structure } from "./ssot/structure";
-import type { TableKey } from "./types/types";
-import { getPkFields } from "./utils/utils";
+import { structure } from "../../shared/src/ssot/structure";
+import type { TableKey } from "../../shared/src/types/types";
+import { getPkFields } from "../../shared/src/utils/utils";
 import { getRequiredFields } from "./helpers";
 
 function invalidPKFieldNames(table: TableKey, fieldNames: string[]){

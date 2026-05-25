@@ -2,7 +2,7 @@ import express from 'express';
 import {assertValidPostInstance} from "../assertions";
 import {getEntityName, getNotDerivableFields, tryQuery, formatTableColumnsForQuery, } from "../helpers";
 import {sendSuccessOperationMessage, sendErrorMessage} from "../statusMessages";
-import {TableKey} from "../types/types";
+import {TableKey} from "../../../shared/src/types/types";
 import { Pool } from "pg";
 
 

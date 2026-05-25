@@ -1,10 +1,10 @@
-import { structure } from "../ssot/structure";
+import { structure } from "../../../shared/src/ssot/structure";
 import express from 'express';
 import {assertValidGetInstance} from "../assertions";
 import {getEntityName, getDerivableFields, getReferencedRelations, tryQuery, columnNamesEqualsNumber, } from "../helpers";
-import { getPkFields } from "../utils/utils";
+import { getPkFields } from "../../../shared/src/utils/utils";
 import {sendSuccessOperationMessage, sendNotFoundMessage, sendErrorMessage} from "../statusMessages";
-import {TableKey, ColumnDef, TableStructure, Response} from "../types/types";
+import {TableKey, ColumnDef, TableStructure, Response} from "../../../shared/src/types/types";
 import {} from "../validations";
 import { Pool } from "pg";
 

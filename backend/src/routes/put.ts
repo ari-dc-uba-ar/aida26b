@@ -2,7 +2,7 @@ import express from 'express';
 import {assertValidPutInstance} from "../assertions";
 import {getEntityName, getNotDerivableFields, tryQuery, columnNamesEqualsNumber, } from "../helpers";
 import {sendSuccessOperationMessage, sendNotFoundMessage, sendErrorMessage} from "../statusMessages";
-import {TableKey, Response} from "../types/types";
+import {TableKey, Response} from "../../../shared/src/types/types";
 import { Pool } from "pg";
 
 export async function putHandler(pool: Pool, req: express.Request, res: express.Response) {

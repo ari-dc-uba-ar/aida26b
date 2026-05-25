@@ -1,10 +1,10 @@
 import express from 'express';
 import { getEntityName } from "../helpers";
 import { Pool } from 'pg';
-import type { TableKey, Response } from "../types/types";
+import type { TableKey, Response } from "../../../shared/src/types/types";
 import  { assertValidDeleteInstance } from '../assertions';
 import  { columnNamesEqualsNumber, tryQuery} from '../helpers';
-import  { getPkFields } from '../utils/utils';
+import  { getPkFields } from "../../../shared/src/utils/utils";
 import  { sendErrorMessage, sendNotFoundMessage, sendSuccessOperationMessage} from '../statusMessages';
 
 export async function deleteHandler(pool: Pool, req: express.Request, res: express.Response) {
