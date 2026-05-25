@@ -1,30 +1,11 @@
 // Main application file
 // Code and comments in English
+import type {TableKey, TableRecordMap, TableStructure, InferType, ColumnDef, Response} from './types/types.ts';
+import {getPkFields} from './utils/utils.js';
+import { structure } from "./ssot/structure.js";
+
 
 const API_BASE = '/api';
-
-
-
-type TypeMap = {
-  string: string;
-  number: number;
-  boolean: boolean;
-  date: Date;
-};
-
-type MyTypeNames = keyof TypeMap;
-
-type ColumnDef = {
-  type: MyTypeNames;
-  label?: string;
-  input?: 'text' | 'email' | 'date' | 'number' | 'textarea' | 'select';
-  options?: Array<{ value: string; label: string }>;
-  required?: boolean;
-  editable?: boolean;
-  readonlyOnEdit?: boolean;
-  nullable?: boolean;
-}
-
 
 type RendererProps<K extends TableKey> = {
   id: string;
@@ -80,83 +61,6 @@ function mapInputToRenderer(input?: ColumnDef['input']): RendererKey {
   return 'input';
 }
 
-type TableStructure = {
-  columns: Record<string, ColumnDef>
-  pk: string | string[]
-  uiName: string
-  title?: string
-  addButtonLabel?: string
-}
-
-type InferType<FieldDefs extends Record<string, ColumnDef>> = {
-  [K in keyof FieldDefs]: TypeMap[FieldDefs[K]['type']]
-}
-const structure = {
-  tables: {
-    students: {
-      columns:{
-        numero_libreta   :{type: 'string', label: "Número de Libreta / Student ID:", required: true, readonlyOnEdit: true},
-        dni              :{type: 'string', label: 'DNI / ID Number:', required: true},
-        first_name       :{type: 'string', label: 'Nombre / First Name:', required: true},
-        last_name        :{type: 'string', label: 'Apellido / Last Name:', required: true},
-        email            :{type: 'string', label: 'Email:', input: 'email'},
-        enrollment_date  :{type: 'string', label: 'Fecha de Inscripción / Enrollment Date:', input: 'date'},
-        status           :{type: 'string', label: 'Estado / Status:', input: 'select', options: [
-          { value: 'active', label: 'Activo / Active' },
-          { value: 'graduated', label: 'Graduado / Graduated' },
-          { value: 'interrupted', label: 'Interrumpido / Interrupted' },
-        ]},
-      },
-      pk: 'numero_libreta',
-      uiName: 'Student',
-      title: 'Alumnos / Students',
-      addButtonLabel: 'Agregar Alumno / Add Student'
-    } satisfies TableStructure,
-    subjects: {
-      columns:{
-        cod_mat     :{type: 'string', label: 'Código / Code:', required: true, readonlyOnEdit: true},
-        name        :{type: 'string', label: 'Nombre / Name:', required: true},
-        description :{type: 'string', label: 'Descripción / Description:', input: 'textarea'},
-        credits     :{type: 'number', label: 'Créditos / Credits:', input: 'number', nullable: false},
-        department  :{type: 'string', label: 'Departamento / Department:'},
-      },
-      pk: 'cod_mat',
-      uiName: 'Subject',
-      title: 'Materias / Subjects',
-      addButtonLabel: 'Agregar Materia / Add Subject'
-    } satisfies TableStructure,
-    enrollments: {
-        pk: ['numero_libreta', 'cod_mat'],
-        uiName: 'Enrollment',
-        columns: {
-          numero_libreta: { type: 'string', label: 'Número de Libreta / Student ID:', required: true, readonlyOnEdit: true },
-          student_name: { type: 'string', label: 'Nombre del Alumno / Student Name:', editable: false },
-          cod_mat: { type: 'string', label: 'Código de Materia / Subject Code:', required: true, readonlyOnEdit: true },
-          subject_name: { type: 'string', label: 'Nombre de Materia / Subject Name:', editable: false },
-          enrollment_date: { type: 'string', label: 'Fecha de Inscripción / Enrollment Date:', input: 'date', required: true },
-          grade: { type: 'number', label: 'Nota / Grade:', input: 'number', nullable: true },
-          status: { type: 'string', label: 'Estado / Status:', input: 'select', options: [
-            { value: 'enrolled', label: 'Inscrito / Enrolled' },
-            { value: 'completed', label: 'Completado / Completed' },
-            { value: 'failed', label: 'Fallido / Failed' },
-          ] }
-        }
-      ,
-        title: 'Inscripciones / Enrollments',
-        addButtonLabel: 'Agregar Inscripción / Add Enrollment'
-      } satisfies TableStructure
-  }
-}
-
-
-
-
-type TableKey = keyof typeof structure.tables;
-
-type TableRecordMap = {
-  [T in keyof typeof structure.tables]: InferType<(typeof structure.tables)[T]['columns']>
-};
-
 // DOM elements (derive nav buttons from `structure.tables` keys to avoid duplication)
 const viewTitle = document.getElementById('view-title') as HTMLElement;
 const addRecordBtn = document.getElementById('add-record-btn') as HTMLButtonElement;
@@ -194,12 +98,66 @@ function showSection(section: TableKey) {
   loadTableData(section);
 }
 
+function showSuccessMessage(message: string){
+  const outputContainer = document.querySelector(".successOutputInfoContainer");
+  const outputText = document.querySelector(".successOutputInfo") as HTMLDivElement;
+  if (outputContainer?.classList.contains("invisible")){
+    outputText.textContent = message;
+    outputContainer?.classList.remove("invisible");
+    setTimeout(() => {
+      outputText.textContent = '';
+      outputContainer?.classList.add("invisible");
+    }, 1500);
+  }
+}
+
+function showErrorMessage(message: string){
+  const dialog = document.createElement("dialog");
+  dialog.classList.add("dialogErrorMessage");
+  const dialogMessage       = document.createElement("p");
+  const dialogTitle         = document.createElement("h1"); 
+  const closeButton         = document.createElement("button");
+  dialogTitle.textContent   = "Error";
+  dialogMessage.textContent = message;
+  closeButton.textContent   = "Aceptar";
+  closeButton.addEventListener("click", (event) => {
+    dialog.close();
+    dialog.remove();
+  })
+  dialog.addEventListener("click", (event) => {
+    const dialogRect = dialog.getBoundingClientRect();
+    if (event.clientX < dialogRect.left    ||
+        event.clientX > dialogRect.right   ||
+        event.clientY > dialogRect.bottom  || 
+        event.clientY < dialogRect.top) {
+          dialog.close();
+          dialog.remove();
+    }   
+  });
+  appendChildsToElement(dialog, [dialogTitle, dialogMessage, closeButton]);
+  document.querySelector(".container")?.appendChild(dialog);
+  dialog.setAttribute('closedby', 'any');
+  dialog.showModal();
+}
+
+function appendChildsToElement(element: HTMLElement, childs: HTMLElement[]){
+  childs.forEach(child => element.appendChild(child));
+}
+
+
+
+
 //Load 
 async function loadTableData<K extends TableKey>(tableKey: K) {    
   try {
     const response = await fetch(`${API_BASE}/${tableKey}`);
-    const data = (await response.json()) as TableRecordMap[K][];
-    renderAnyTable(tableKey, data);
+    const responseAnswer: Response = await response.json(); 
+    const responseData = responseAnswer.data as TableRecordMap[K][];
+    if (!responseAnswer.success){
+      return showErrorMessage(responseAnswer.message ?? '');
+    }
+    showSuccessMessage(responseAnswer.message ?? '');
+    renderAnyTable(tableKey, responseData);
   } catch (error) {
     console.error(`Error loading ${tableKey}:`, error);
   }
@@ -272,10 +230,6 @@ function renderAnyTable<K extends TableKey>(tableKey: K, records: TableRecordMap
 
 addRecordBtn.addEventListener('click', () => showAnyForm(activeTableKey));
 
-function getPkFields(tableKey: TableKey): string[] {
-  const tableConfig = structure.tables[tableKey];
-  return Array.isArray(tableConfig.pk) ? tableConfig.pk : [tableConfig.pk];
-}
 
 function getFieldElementId(tableKey: TableKey, fieldName: string): string {
   return `${tableKey}-${fieldName}`;
@@ -372,19 +326,20 @@ async function showAnyForm<K extends TableKey>(tableKey: K, record?: Partial<Tab
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = collectFormData(tableKey);
-
-    const pkPath = isEdit
-        ? `/${getPkFields(tableKey)
-          .map((fieldName) => encodeURIComponent(String((payload as Record<string, unknown>)[fieldName] ?? (record as Record<string, unknown> | undefined)?.[fieldName] ?? '')))
-          .join('/')}`
-      : '';
-
+    const pkAndTheirValues = getPkFields(tableKey).map((pkFieldName) => [pkFieldName, String((payload as Record<string, unknown>)[pkFieldName])?? String((record as Record<string, unknown> | undefined)?.[pkFieldName]) ?? '']);
+    const queryParams = new URLSearchParams(pkAndTheirValues).toString();
+    let response;    
     try {
-      await fetch(`${API_BASE}/${tableKey}${pkPath}`, {
+      response = (await fetch(`${API_BASE}/${tableKey}?` + queryParams, {
         method: isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      });
+      }));
+      const responseJson: Response = await response.json();
+      if (!responseJson.success){
+        showErrorMessage(responseJson.message ?? '');
+      }
+      showSuccessMessage(responseJson.message ?? '');
       hideAnyForm();
       loadTableData(tableKey);
     } catch (error) {
@@ -406,8 +361,14 @@ window.hideAnyForm = hideAnyForm;
 
 window.editRecord = async <K extends TableKey>(tableKey: K, ...pkValues: string[]) => {
   try {
-    const response = await fetch(`${API_BASE}/${tableKey}${getRecordPath(pkValues)}`);
-    const record = (await response.json()) as TableRecordMap[K];
+    const queryParams = new URLSearchParams(getPkFields(tableKey).map((pkFieldName, index) => [pkFieldName, pkValues[index]])).toString();
+    const response = await fetch(`${API_BASE}/${tableKey}?` + queryParams);
+    const responseAnswer: Response = await response.json(); 
+    const record = responseAnswer.data as TableRecordMap[K];
+    if (!responseAnswer.success){
+      return showErrorMessage(responseAnswer.message ?? '');
+    }
+    showSuccessMessage(responseAnswer.message ?? '');
     showAnyForm(tableKey, record);
   } catch (error) {
     console.error(`Error loading ${tableKey} for edit:`, error);
@@ -417,7 +378,13 @@ window.deleteRecord = async <K extends TableKey>(tableKey: K, ...pkValues: strin
   const tableConfig = structure.tables[tableKey];
   if (confirm(`¿Está seguro de que desea eliminar este ${tableConfig.uiName.toLowerCase()}? / Are you sure you want to delete this ${tableConfig.uiName.toLowerCase()}?`)) {
     try {
-      await fetch(`${API_BASE}/${tableKey}${getRecordPath(pkValues)}`, { method: 'DELETE' });
+      const queryParams = new URLSearchParams(getPkFields(tableKey).map((pkFieldName, index) => [pkFieldName, pkValues[index]])).toString();
+      const response = await fetch(`${API_BASE}/${tableKey}?` + queryParams, {method: 'DELETE'});
+      const responseAnswer: Response = await response.json(); 
+      if (!responseAnswer.success){
+        return showErrorMessage(responseAnswer.message ?? '');
+      }
+      showSuccessMessage(responseAnswer.message ?? '');
       loadTableData(tableKey);
     } catch (error) {
       console.error(`Error deleting ${tableKey}:`, error);

@@ -109,6 +109,36 @@
             background-color: #6c757d;
             color: white;
         }
+
+        .dialogErrorMessage{
+            background-color: #dc3546;
+            color: white;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+         }
+
+        .dialogErrorMessage button{
+            background-color: #007bff;
+            color: white;
+            border-radius: 20px;   
+        }
+        .successOutputInfoContainer {
+            border-radius: 20px;   
+            background-color: #4ccf6ac9;
+        }
+        p[class="successOutputInfo"]{
+            color: white;
+            font-weight: bold;
+            padding: 5px 10px;
+        }
+
+        .invisible{
+            display: none;
+        }
+
+
     </style>
 </head>
 <body>
@@ -125,6 +155,9 @@
                 <thead></thead>
                 <tbody></tbody>
             </table>
+        </div>
+        <div class="successOutputInfoContainer invisible">
+            <p class="successOutputInfo"></p>
         </div>
     </div>
 
