@@ -6,6 +6,8 @@ import fs from 'fs';
 
 import * as auth from './auth';
 import { pool } from './db';
+import { assertSchemaInSync } from './schema-lock';
+import { DEFAULT_MIGRATIONS_DIR } from './migration-files';
 
 import { getHandler } from './routes/get';
 import { putHandler } from './routes/put';
@@ -547,8 +549,20 @@ app.get('*', (_req, res) => {
 
 export { app, pool };
 
-if (require.main === module) {
+async function start(): Promise<void> {
+  try {
+    await assertSchemaInSync(pool, DEFAULT_MIGRATIONS_DIR);
+    console.log('[schema-lock] schema in sync');
+  } catch (err) {
+    console.error('[schema-lock] startup failed:\n' + (err as Error).message);
+    process.exit(1);
+  }
+
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);
   });
+}
+
+if (require.main === module) {
+  start();
 }
