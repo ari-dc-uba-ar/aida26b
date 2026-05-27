@@ -21,6 +21,16 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+app.get('/api/health', async (_req, res) => {
+  try {
+    await assertSchemaInSync(pool, DEFAULT_MIGRATIONS_DIR);
+    res.json({ status: 'ok' });
+  } catch (err) {
+    console.error('[schema-lock] health check failed:\n' + (err as Error).message);
+    res.status(503).json({ status: 'error' });
+  }
+});
+
 type AuthedRequest = Request & { user?: auth.AuthUser };
 
 function getSessionToken(req: Request) {
