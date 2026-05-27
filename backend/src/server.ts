@@ -1,17 +1,14 @@
-import   express         from 'express';
-import   cors            from 'cors';
-import   dotenv          from 'dotenv';
-import   path            from 'path';
-import { Pool          } from 'pg';
-import { getHandler    } from './routes/get';
-import { putHandler    } from './routes/put';
-import { postHandler   } from './routes/post';
-import { deleteHandler } from './routes/delete';
-// Load environment variables
-dotenv.config();
+import   dotenv              from 'dotenv';
+import { createAppWithPool } from './app';
+import { Pool              } from 'pg';    
 
-const app = express();
-const port = process.env.PORT || 3000;
+// Load environment variables
+if (process.env.NODE_ENV === 'tests'){
+  dotenv.config({path: '../test/.env.tests'});
+}
+else{
+  dotenv.config();
+}
 
 // Database connection
 const pool = new Pool({
@@ -22,26 +19,9 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
 });
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+const port = process.env.PORT || 3000;
 
-// Routes
-app.get('/api/:tableName', async (req, res) => getHandler(pool, req, res));
-
-app.put('/api/:tableName', async (req, res) => putHandler(pool, req, res));
-
-app.post('/api/:tableName', async (req, res) => postHandler(pool, req, res));
-
-app.delete('/api/:tableName', async (req, res) => deleteHandler(pool, req, res));
-
-// Serve static files from frontend dist
-app.use(express.static(path.join(__dirname, '../../frontend/dist')));
-
-// Catch-all handler: send back index.html for any non-API routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
-});
+const app = createAppWithPool(pool);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
