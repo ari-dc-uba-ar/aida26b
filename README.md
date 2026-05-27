@@ -73,6 +73,10 @@ Este proyecto implementa un sistema de gestión académica para la Facultad de C
    `ALTER TABLE students DROP COLUMN phone`. Las migraciones aplicadas son
    inmutables — modificarlas rompe la verificación de checksum.
 
+   El backend al arrancar verifica que la DB matchee con los archivos del repo
+   y se niega a levantar si no coincide (`process.exit(1)` con el detalle al
+   stderr). También expone `/api/health` que reporta el mismo estado en runtime.
+
 ### Backend
 
 1. Navegar al directorio `backend`
