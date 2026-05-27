@@ -144,6 +144,53 @@ function showApp(user: AuthUser): void {
   showSection(activeTableKey, false);
 }
 
+function showApiError(hideApp: boolean): void {
+  const banner = document.getElementById('api-error-banner');
+  if (banner) {
+    banner.innerHTML = '';
+
+    const title = document.createElement('strong');
+    title.textContent = hideApp
+      ? 'El sistema no está disponible / The system is currently unavailable'
+      : 'No se pudo completar la acción / Action could not be completed';
+    banner.appendChild(title);
+
+    const message = document.createElement('p');
+    message.style.margin = '4px 0 0';
+    message.textContent = hideApp
+      ? 'Estamos teniendo problemas para conectarnos con el servidor. Por favor intentá nuevamente en unos minutos. Si el problema persiste, contactá al administrador. / We are having trouble reaching the server. Please try again in a few minutes. If the issue persists, contact the administrator.'
+      : 'Algo salió mal con tu pedido. Verificá los datos e intentá de nuevo. / Something went wrong with your request. Check the data and try again.';
+    banner.appendChild(message);
+
+    if (hideApp) {
+      const retry = document.createElement('button');
+      retry.textContent = 'Reintentar / Retry';
+      retry.style.marginTop = '12px';
+      retry.addEventListener('click', () => {
+        retry.disabled = true;
+        retry.textContent = 'Reintentando… / Retrying…';
+        retry.style.opacity = '0.6';
+        retry.style.cursor = 'wait';
+        window.location.reload();
+      });
+      banner.appendChild(retry);
+    }
+
+    banner.style.display = 'block';
+  }
+  if (hideApp) {
+    const container = document.querySelector('.container') as HTMLElement | null;
+    if (container) container.style.display = 'none';
+  }
+}
+
+function hideApiError(): void {
+  const banner = document.getElementById('api-error-banner');
+  if (banner) banner.style.display = 'none';
+  const container = document.querySelector('.container') as HTMLElement | null;
+  if (container) container.style.display = '';
+}
+
 async function apiFetch(path: string, options: RequestInit = {}): Promise<globalThis.Response> {
   const headers = options.body
     ? {
@@ -157,6 +204,11 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<global
     headers,
     credentials: 'same-origin',
   });
+
+  if (response.status === 503) {
+    showApiError(true);
+    throw new Error('Service unavailable');
+  }
 
   if (response.status === 401) {
     showLogin(getLocalizedText(structure.commonText.sessionExpired));
@@ -178,6 +230,7 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<global
     throw new Error(data.error || 'Forbidden');
   }
 
+  hideApiError();
   return response;
 }
 
@@ -852,7 +905,7 @@ async function loadTableData<K extends TableKey>(tableKey: K): Promise<void> {
   } catch (error) {
     const message = (error as Error).message;
 
-    if (message !== 'Authentication required' && message !== 'Forbidden') {
+    if (message !== 'Authentication required' && message !== 'Forbidden' && message !== 'Service unavailable') {
       setMessage(getLocalizedText(structure.commonText.errorLoadingData));
       console.error(`Error loading ${tableKey}:`, error);
     }
@@ -1581,7 +1634,7 @@ function showUserForm(role: Exclude<Role, 'reader'>): void {
     } catch (error) {
       const message = (error as Error).message;
 
-      if (message !== 'Authentication required' && message !== 'Forbidden') {
+      if (message !== 'Authentication required' && message !== 'Forbidden' && message !== 'Service unavailable') {
         setMessage(getLocalizedText(structure.commonText.errorCreatingUser));
         console.error('Error creating user:', error);
       }
@@ -1718,7 +1771,7 @@ async function showAnyForm<K extends TableKey>(
     } catch (error) {
       const message = (error as Error).message;
 
-      if (message !== 'Authentication required' && message !== 'Forbidden') {
+      if (message !== 'Authentication required' && message !== 'Forbidden' && message !== 'Service unavailable') {
         setMessage(getLocalizedText(structure.commonText.errorSaving));
         console.error(
           `Error saving ${getLocalizedText(tableConfig.uiName).toLowerCase()}:`,
@@ -1779,7 +1832,7 @@ window.editRecord = async <K extends TableKey>(
   } catch (error) {
     const message = (error as Error).message;
 
-    if (message !== 'Authentication required' && message !== 'Forbidden') {
+    if (message !== 'Authentication required' && message !== 'Forbidden' && message !== 'Service unavailable') {
       setMessage(getLocalizedText(structure.commonText.errorLoadingRecord));
       console.error(`Error loading ${tableKey} for edit:`, error);
     }
@@ -1826,7 +1879,7 @@ window.deleteRecord = async <K extends TableKey>(
   } catch (error) {
     const message = (error as Error).message;
 
-    if (message !== 'Authentication required' && message !== 'Forbidden') {
+    if (message !== 'Authentication required' && message !== 'Forbidden' && message !== 'Service unavailable') {
       setMessage(getLocalizedText(structure.commonText.errorDeleting));
       console.error(`Error deleting ${tableKey}:`, error);
     }

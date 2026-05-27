@@ -312,3 +312,23 @@ p[class="successOutputInfo"]{
 .invisible{
     display: none;
 }
+
+#api-error-banner {
+    display: none;
+    max-width: 1200px;
+    margin: 0 auto 20px;
+    padding: 16px 20px;
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+}
+#api-error-banner strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 16px;
+}
+#api-error-banner button {
+    background-color: #721c24;
+    color: white;
+}
