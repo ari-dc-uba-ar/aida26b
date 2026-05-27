@@ -1,32 +1,19 @@
 import express from 'express';
 import type { Request, RequestHandler } from 'express';
 import cors from 'cors';
-import { Pool } from 'pg';
-import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 
 import * as auth from './auth';
+import { pool } from './db';
 
 import { getHandler } from './routes/get';
 import { putHandler } from './routes/put';
 import { postHandler } from './routes/post';
 import { deleteHandler } from './routes/delete';
 
-// Load environment variables before reading process.env
-dotenv.config();
-
 const app = express();
 const port = process.env.PORT || 3000;
-
-// Database connection
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-});
 
 // Middleware
 app.use(cors());
