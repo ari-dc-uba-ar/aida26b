@@ -77,6 +77,25 @@ Este proyecto implementa un sistema de gestión académica para la Facultad de C
    y se niega a levantar si no coincide (`process.exit(1)` con el detalle al
    stderr). También expone `/api/health` que reporta el mismo estado en runtime.
 
+3. Generar migraciones automáticamente (opcional, desde `backend/`):
+
+   El schema deseado se declara en `backend/src/schema-def.ts`. Después de
+   editarlo:
+   ```
+   npm run migrate:diff -- nombre_descriptivo
+   ```
+   compara la declaración contra la DB local y genera un **borrador** de
+   migración en `database/migrations/` con la diferencia. Los cambios aditivos
+   (tabla nueva, columna nullable, default) salen listos para aplicar; los
+   que pueden chocar con datos existentes salen con un `TODO` de backfill, y
+   los destructivos (`DROP`) salen comentados — siempre revisar el borrador
+   antes de `npm run migrate`. El generador no detecta renames (aparecen como
+   DROP + ADD: reescribirlos a mano como `RENAME`) y se niega a correr si hay
+   migraciones pendientes.
+
+   `schema-def.ts` y la migración generada se commitean **juntos** — si
+   divergen, el próximo `migrate:diff` lo delata (no da "in sync").
+
 ### Backend
 
 1. Navegar al directorio `backend`
