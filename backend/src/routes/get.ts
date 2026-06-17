@@ -323,10 +323,10 @@ function getBaseSelectQuery(tableName: TableKey): string {
 }
 
 function getListFilterConfig(tableName: TableKey): Record<string, ColumnDef> {
-  const baseColumns = structure.tables[tableName].columns as Record<
-    string,
-    ColumnDef
-  >;
+  const baseColumns = Object.fromEntries(
+    Object.entries(structure.tables[tableName].columns as Record<string, ColumnDef>)
+      .filter(([, column]) => column.persist !== false)
+  );
 
   const derivedColumns = Object.fromEntries(getDerivableFields(tableName));
 

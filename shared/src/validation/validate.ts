@@ -100,7 +100,7 @@ function normalizeValue(col: ColumnDef, value: unknown): unknown {
 
 function editableColumns(table: TableKey): string[] {
   return Object.entries(structure.tables[table].columns as Record<string, ColumnDef>)
-    .filter(([, col]) => col.editable !== false)
+    .filter(([, col]) => col.editable !== false && col.persist !== false)
     .map(([key]) => key);
 }
 

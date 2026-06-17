@@ -722,8 +722,10 @@ function renderAnyTable<K extends TableKey>(
 
   const headerRow = document.createElement('tr');
 
-  Object.entries(tableStructure.columns).forEach(([fieldName, column]) => {
-    const th = document.createElement('th');
+  Object.entries(tableStructure.columns)
+    .filter(([, column]) => column.persist !== false)
+    .forEach(([fieldName, column]) => {
+      const th = document.createElement('th');
 
     th.textContent = getLocalizedText(column.label as LocalizedText | string) || fieldName;
     th.className = 'sortable';
@@ -763,9 +765,11 @@ function renderAnyTable<K extends TableKey>(
       : [tableStructure.pk];
 
     const row = document.createElement('tr');
-    const columnNames = Object.keys(tableStructure.columns) as Array<
-      keyof TableRecordMap[K] & string
-    >;
+    const columnNames = (Object.entries(tableStructure.columns) as Array<
+      [keyof TableRecordMap[K] & string, ColumnDef]
+    >)
+      .filter(([, column]) => column.persist !== false)
+      .map(([fieldName]) => fieldName);
 
     columnNames.forEach((name) => {
       const td = document.createElement('td');
@@ -1476,7 +1480,7 @@ function collectFormData<K extends TableKey>(
   const payload: Partial<TableRecordMap[K]> = {};
 
   Object.entries(tableConfig.columns)
-    .filter(([, column]) => column.editable !== false)
+    .filter(([, column]) => column.editable !== false && column.persist !== false)
     .forEach(([fieldName, column]) => {
       const id = getFieldElementId(tableKey, fieldName);
       const element = document.getElementById(id) as

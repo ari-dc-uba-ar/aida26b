@@ -30,7 +30,9 @@ function getDerivableFields(tableName: TableKey): [string, ColumnDef][]{
 
 function getNotDerivableFields(table: TableKey): string[]{
   const columns: [string, ColumnDef][] = Object.entries(structure.tables[table].columns as Record<string, ColumnDef>);
-  const notDerivableEntries = columns.filter(([fieldName, columnDef]) => !columnDef.derivable);
+  const notDerivableEntries = columns.filter(
+    ([fieldName, columnDef]) => !columnDef.derivable && columnDef.persist !== false
+  );
   return notDerivableEntries.map(([fieldName, column]) => fieldName);
 }
 
@@ -41,7 +43,9 @@ function getReferencedRelations(tableName: TableKey): TableKey[]{
 
 function getRequiredFields(tableName: TableKey){
   const tableColumns: Record<string, ColumnDef> = structure.tables[tableName].columns;
-  return Object.entries(tableColumns).filter(([fieldName, column]) => column.required);
+  return Object.entries(tableColumns)
+    .filter(([fieldName, column]) => column.required && column.persist !== false)
+    .map(([fieldName]) => fieldName);
 }
 
 function formatTableColumnsForQuery(fieldsNames: string[], from: number = 1): string[]{

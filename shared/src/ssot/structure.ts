@@ -108,6 +108,38 @@ export const structure = {
       addButtonLabel: { es: 'Agregar Alumno', en: 'Add Student' },
     } satisfies TableStructure,
 
+    departments: {
+      columns: {
+        dept_code: {
+          type: 'string',
+          label: { es: 'Código', en: 'Code' },
+          readonlyOnEdit: true,
+          validator: {
+            required: true,
+          },
+        },
+        name: {
+          type: 'string',
+          label: { es: 'Nombre', en: 'Name' },
+          validator: {
+            required: true,
+          },
+        },
+        description: {
+          type: 'string',
+          label: { es: 'Descripción', en: 'Description' },
+          input: 'textarea',
+          validator: {
+            nullable: true,
+          },
+        },
+      },
+      pk: 'dept_code',
+      uiName: { es: 'Departamento', en: 'Department' },
+      title: { es: 'Departamentos', en: 'Departments' },
+      addButtonLabel: { es: 'Agregar Departamento', en: 'Add Department' },
+    } satisfies TableStructure,
+
     subjects: {
       columns: {
         cod_mat: {
@@ -147,11 +179,17 @@ export const structure = {
           },
         },
 
-        department: {
+        dept_code: {
           type: 'string',
           label: { es: 'Departamento', en: 'Department' },
+          input: 'select',
           validator: {
-            nullable: true,
+            required: true,
+          },
+          foreignKey: {
+            table: 'departments',
+            valueField: 'dept_code',
+            labelField: 'name',
           },
         },
       },
@@ -160,7 +198,6 @@ export const structure = {
       title: { es: 'Materias', en: 'Subjects' },
       addButtonLabel: { es: 'Agregar Materia', en: 'Add Subject' },
     } satisfies TableStructure,
-
     enrollments: {
       pk: ['numero_libreta', 'cod_mat'],
       uiName: { es: 'Inscripción', en: 'Enrollment' },
@@ -198,6 +235,22 @@ export const structure = {
           },
         },
 
+        department: {
+          type: 'string',
+          label: { es: 'Departamento', en: 'Department' },
+          input: 'select',
+          persist: false,
+          validator: {
+            required: true,
+          },
+          readonlyOnEdit: true, 
+          foreignKey: {
+            table: 'departments',
+            valueField: 'dept_code',
+            labelField: 'name',
+          },
+        },
+
         cod_mat: {
           type: 'string',
           label: { es: 'Código de Materia', en: 'Subject Code' },
@@ -210,6 +263,10 @@ export const structure = {
             table: 'subjects',
             valueField: 'cod_mat',
             labelField: 'name',
+            dependsOn: {
+              field: 'department',
+              foreignField: 'dept_code',
+            },
           },
         },
 

@@ -55,6 +55,7 @@ type ColumnDef = {
   readonlyOnEdit?: boolean;
   validator?: ColumnValidator;
   nullable?: boolean;
+  persist?: boolean;
   derivable?: {originTable: string, sqlGenerationStatement: string};
   foreignKey?: ForeignKeyDef;
 }
