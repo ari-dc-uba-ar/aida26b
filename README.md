@@ -79,8 +79,8 @@ Este proyecto implementa un sistema de gestión académica para la Facultad de C
 
 3. Generar migraciones automáticamente (opcional, desde `backend/`):
 
-   El schema deseado se declara en `backend/src/schema-def.ts`. Después de
-   editarlo:
+   El schema deseado se declara en la SSOT compartida `shared/src/ssot/structure.ts`.
+   Después de editarla:
    ```
    npm run migrate:diff -- nombre_descriptivo
    ```
@@ -93,7 +93,7 @@ Este proyecto implementa un sistema de gestión académica para la Facultad de C
    DROP + ADD: reescribirlos a mano como `RENAME`) y se niega a correr si hay
    migraciones pendientes.
 
-   `schema-def.ts` y la migración generada se commitean **juntos** — si
+   `structure.ts` y la migración generada se commitean **juntos** — si
    divergen, el próximo `migrate:diff` lo delata (no da "in sync").
 
 ### Backend

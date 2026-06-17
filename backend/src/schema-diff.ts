@@ -1,5 +1,6 @@
-// Schema diff: compares the declarative desired schema (schema-def.ts) against
-// the live database and generates a DRAFT migration file for the difference.
+// Schema diff: compares the desired schema (derived from the shared SSOT in
+// shared/src/ssot/structure.ts) against the live database and generates a DRAFT
+// migration file for the difference.
 //
 // The generated file is a starting point, not a finished migration:
 //   - destructive statements (DROP) are emitted commented-out
@@ -13,13 +14,16 @@ import fs from 'fs';
 import path from 'path';
 import { Pool } from 'pg';
 import { DEFAULT_MIGRATIONS_DIR, listMigrationFiles } from './migration-files';
-import { desiredSchema, TableDef } from './schema-def';
+import {
+  desiredSchemaFromStructure,
+  DesiredTable as TableDef,
+} from './structure-adapter';
 
 type DbColumn = { type: string; notnull: boolean; default: string | null };
 type DbTable = { columns: Map<string, DbColumn>; pk: string[] };
 type DbSchema = Map<string, DbTable>;
 
-// Normalize a type name so 'VARCHAR(20)' (schema-def) and
+// Normalize a type name so 'VARCHAR(20)' (from the adapter) and
 // 'character varying(20)' (pg catalog) compare as equal.
 function canonType(t: string): string {
   return t
@@ -143,7 +147,7 @@ export function diffSchemas(
     for (const col of dbTable.columns.keys()) {
       if (!(col in def.columns)) {
         statements.push(
-          `-- ⚠️ column exists in DB but not in schema-def. If this was a RENAME,\n` +
+          `-- ⚠️ column exists in DB but not in the SSOT. If this was a RENAME,\n` +
             `-- rewrite as: ALTER TABLE ${table} RENAME COLUMN ${col} TO <new_name>;\n` +
             `-- Uncomment only if you really want to destroy this data:\n` +
             `-- ALTER TABLE ${table} DROP COLUMN ${col};`
@@ -164,7 +168,7 @@ export function diffSchemas(
   for (const table of actual.keys()) {
     if (!(table in desired)) {
       statements.push(
-        `-- ⚠️ table exists in DB but not in schema-def. If this was a RENAME,\n` +
+        `-- ⚠️ table exists in DB but not in the SSOT. If this was a RENAME,\n` +
           `-- rewrite as: ALTER TABLE ${table} RENAME TO <new_name>;\n` +
           `-- Uncomment only if you really want to destroy this data:\n` +
           `-- DROP TABLE ${table};`
@@ -216,7 +220,7 @@ async function cli(): Promise<void> {
     }
 
     const actual = await introspect(pool);
-    const { statements, warnings } = diffSchemas(desiredSchema, actual);
+    const { statements, warnings } = diffSchemas(desiredSchemaFromStructure(), actual);
 
     for (const w of warnings) console.warn(`⚠️  ${w}`);
 

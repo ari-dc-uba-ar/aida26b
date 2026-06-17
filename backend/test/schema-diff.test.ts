@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { diffSchemas, introspect } from '../src/schema-diff';
 import { runMigrations } from '../src/migrate';
-import { TableDef } from '../src/schema-def';
+import { DesiredTable as TableDef } from '../src/structure-adapter';
 import { resetTestDb, makeTestPool, makeTempMigrationsDir, cleanupDir } from './helpers';
 
 // diffSchemas is pure — these tests build the "actual" DB state as plain maps.
