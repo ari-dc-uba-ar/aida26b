@@ -13,6 +13,7 @@ export type DesiredTable = {
 };
 
 function inferSqlType(col: ColumnDef): string {
+  if (col.sqlType) return col.sqlType;
   if (col.input === 'textarea') return 'TEXT';
   if (col.input === 'date' || col.type === 'date') return 'DATE';
   if (col.type === 'boolean') return 'BOOLEAN';

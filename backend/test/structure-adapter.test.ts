@@ -43,7 +43,7 @@ describe('desiredSchemaFromStructure', () => {
   });
 
   test('number without validator.integer yields NUMERIC', () => {
-    expect(result.enrollments.columns.grade.type).toBe('NUMERIC');
+    expect(result.enrollments.columns.grade.type).toBe('NUMERIC(5,2)');
   });
 
   test('scalar pk is normalized to array', () => {

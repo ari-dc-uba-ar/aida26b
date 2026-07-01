@@ -248,6 +248,7 @@ export const structure = {
           type: 'number',
           label: { es: 'Nota', en: 'Grade' },
           input: 'number',
+          sqlType: 'NUMERIC(5,2)',
           validator: {
             nullable: true,
             minValue: 0,
