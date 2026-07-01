@@ -144,44 +144,37 @@ function showApp(user: AuthUser): void {
   showSection(activeTableKey, false);
 }
 
-function showApiError(hideApp: boolean): void {
+function showApiError(): void {
   const banner = document.getElementById('api-error-banner');
   if (banner) {
     banner.innerHTML = '';
 
     const title = document.createElement('strong');
-    title.textContent = hideApp
-      ? 'El sistema no está disponible / The system is currently unavailable'
-      : 'No se pudo completar la acción / Action could not be completed';
+    title.textContent = 'El sistema no está disponible / The system is currently unavailable';
     banner.appendChild(title);
 
     const message = document.createElement('p');
     message.style.margin = '4px 0 0';
-    message.textContent = hideApp
-      ? 'Estamos teniendo problemas para conectarnos con el servidor. Por favor intentá nuevamente en unos minutos. Si el problema persiste, contactá al administrador. / We are having trouble reaching the server. Please try again in a few minutes. If the issue persists, contact the administrator.'
-      : 'Algo salió mal con tu pedido. Verificá los datos e intentá de nuevo. / Something went wrong with your request. Check the data and try again.';
+    message.textContent =
+      'Estamos teniendo problemas para conectarnos con el servidor. Por favor intentá nuevamente en unos minutos. Si el problema persiste, contactá al administrador. / We are having trouble reaching the server. Please try again in a few minutes. If the issue persists, contact the administrator.';
     banner.appendChild(message);
 
-    if (hideApp) {
-      const retry = document.createElement('button');
-      retry.textContent = 'Reintentar / Retry';
-      retry.style.marginTop = '12px';
-      retry.addEventListener('click', () => {
-        retry.disabled = true;
-        retry.textContent = 'Reintentando… / Retrying…';
-        retry.style.opacity = '0.6';
-        retry.style.cursor = 'wait';
-        window.location.reload();
-      });
-      banner.appendChild(retry);
-    }
+    const retry = document.createElement('button');
+    retry.textContent = 'Reintentar / Retry';
+    retry.style.marginTop = '12px';
+    retry.addEventListener('click', () => {
+      retry.disabled = true;
+      retry.textContent = 'Reintentando… / Retrying…';
+      retry.style.opacity = '0.6';
+      retry.style.cursor = 'wait';
+      window.location.reload();
+    });
+    banner.appendChild(retry);
 
     banner.style.display = 'block';
   }
-  if (hideApp) {
-    const container = document.querySelector('.container') as HTMLElement | null;
-    if (container) container.style.display = 'none';
-  }
+  const container = document.querySelector('.container') as HTMLElement | null;
+  if (container) container.style.display = 'none';
 }
 
 function hideApiError(): void {
@@ -206,7 +199,7 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<global
   });
 
   if (response.status === 503) {
-    showApiError(true);
+    showApiError();
     throw new Error('Service unavailable');
   }
 
