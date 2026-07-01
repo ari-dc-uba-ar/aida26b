@@ -144,46 +144,6 @@ function showApp(user: AuthUser): void {
   showSection(activeTableKey, false);
 }
 
-function showApiError(): void {
-  const banner = document.getElementById('api-error-banner');
-  if (banner) {
-    banner.innerHTML = '';
-
-    const title = document.createElement('strong');
-    title.textContent = 'El sistema no está disponible / The system is currently unavailable';
-    banner.appendChild(title);
-
-    const message = document.createElement('p');
-    message.style.margin = '4px 0 0';
-    message.textContent =
-      'Estamos teniendo problemas para conectarnos con el servidor. Por favor intentá nuevamente en unos minutos. Si el problema persiste, contactá al administrador. / We are having trouble reaching the server. Please try again in a few minutes. If the issue persists, contact the administrator.';
-    banner.appendChild(message);
-
-    const retry = document.createElement('button');
-    retry.textContent = 'Reintentar / Retry';
-    retry.style.marginTop = '12px';
-    retry.addEventListener('click', () => {
-      retry.disabled = true;
-      retry.textContent = 'Reintentando… / Retrying…';
-      retry.style.opacity = '0.6';
-      retry.style.cursor = 'wait';
-      window.location.reload();
-    });
-    banner.appendChild(retry);
-
-    banner.style.display = 'block';
-  }
-  const container = document.querySelector('.container') as HTMLElement | null;
-  if (container) container.style.display = 'none';
-}
-
-function hideApiError(): void {
-  const banner = document.getElementById('api-error-banner');
-  if (banner) banner.style.display = 'none';
-  const container = document.querySelector('.container') as HTMLElement | null;
-  if (container) container.style.display = '';
-}
-
 async function apiFetch(path: string, options: RequestInit = {}): Promise<globalThis.Response> {
   const headers = options.body
     ? {
@@ -199,7 +159,9 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<global
   });
 
   if (response.status === 503) {
-    showApiError();
+    showErrorMessage(
+      'Estamos teniendo problemas para conectarnos con el servidor. Por favor intentá nuevamente en unos minutos. Si el problema persiste, contactá al administrador. / We are having trouble reaching the server. Please try again in a few minutes. If the issue persists, contact the administrator.',
+    );
     throw new Error('Service unavailable');
   }
 
@@ -223,7 +185,6 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<global
     throw new Error(data.error || 'Forbidden');
   }
 
-  hideApiError();
   return response;
 }
 
