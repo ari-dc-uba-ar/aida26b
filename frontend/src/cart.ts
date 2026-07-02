@@ -1,4 +1,4 @@
-import '../styles/style.css';
+import '../styles/styles.css';
 
 export interface CartItem {
   id: string;
@@ -13,13 +13,11 @@ export class ShoppingCart {
   private items: CartItem[] = [];
   private storageKey = 'vanilla-cart';
   private onItemRemove?: OnRemoveCallback;
-  private cartContainer!: HTMLElement;
   private overlay!: HTMLDivElement;
   private appShell!: HTMLElement;
   private isAuthenticated: () => boolean;
 
   private cacheDOMElements(): void {
-    this.cartContainer = document.getElementById('cart-section')!;
     this.appShell = document.getElementById('app-shell')!;
   }
 
@@ -112,16 +110,17 @@ export class ShoppingCart {
     alert('Compra realizada con éxito.');
     this.items = [];
     this.saveToStorage();
-    this.renderCartIfActive();
     this.goHome();
   }
 
   // ========== Navegación ==========
   goCartPage(): void {
     window.location.hash = '#/cart';
+    this.showCartOverlay();
   }
 
   goHome(): void {
+    this.hideCartOverlay();
     const cleanUrl = window.location.pathname + window.location.search;
 	  history.replaceState(null, '', cleanUrl);  
     window.dispatchEvent(new HashChangeEvent('hashchange'));
@@ -147,31 +146,22 @@ export class ShoppingCart {
         return;
       }
       console.log("Mostrando carrito")
-      this.showCartPage();
+      this.showCartOverlay();
     } else {
       console.log("Ocultando carrito");
-      this.hideCartPage();
+      this.hideCartOverlay();
     }
   }
-  private showCartPage(): void {
-    this.appShell.style.display = 'none';
-    this.cartContainer.style.display = 'block';
-    this.renderCartPage();
-  }
 
-  private hideCartPage(): void {
-    this.cartContainer.style.display = 'none';
-    this.appShell.style.display='block';
-    // Solo volver a mostrar app-shell si corresponde (la app principal lo maneja)
-    // No tocamos appShell aquí porque showApp ya lo mostrará cuando haya sesión.
-  }
   private showCartOverlay(): void {
+    this.appShell.style.display = 'none';
     this.overlay.style.display = 'flex';
     this.renderCartPage();
   }
 
   private hideCartOverlay(): void {
     this.overlay.style.display = 'none';
+    this.appShell.style.display='block';
   }
 
   private renderCartIfActive(): void {
