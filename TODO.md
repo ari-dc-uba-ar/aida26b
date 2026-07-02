@@ -1,13 +1,13 @@
 ## Carrito
-- El carrito es un pequeño sistema en el frontend para que el cliente agregue items.
+- ~El carrito es un pequeño sistema en el frontend para que el cliente agregue items.~
 - Cuando el cliente considera comprar, el carrito envia los items a un endpoint y el servidor 
 maneja automaticamente que almacenes, transporte, e items asignar.
 
 ## Funcionalidades para el cliente
 - Poder cancelar el pedido.
-- Ver los items y su cantidad. IMPLEMENTADO
-- Poder agregar o quitar items en el carrito. IMPLEMENTADO
-- Ver la lista de pedidos del cliente. IMPLEMENTADO (vía RLS)
+- ~Ver los items y su cantidad.~
+- ~Poder agregar o quitar items en el carrito.~
+- ~Ver la lista de pedidos del cliente. (implementado vía RLS)~
 
 ## Funcionalidades para los Choferes de transporte
 - Los choferes ven los pedidos que se les asignaron y las direcciones correspondientes.
@@ -25,7 +25,7 @@ por tabla.
 
 ## Roles y autentication
 - Visibilidad por columnas segun cliente y chofer.
-- Visibilidad por filas según cliente y chofer. IMPLEMENTADO.
+- ~Visibilidad por filas según cliente y chofer.~
 - Restringuir acceso a endpoints basado en roles.
 
 ## Visual
