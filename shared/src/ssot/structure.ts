@@ -23,6 +23,7 @@ export const structure = {
           readonlyOnEdit: true,
           validator: {
             required: true,
+            maxLength: 20,
             pattern: '^\\d{1,4}/\\d{2}$',
             patternMessage:
               'must match pattern NNNN/YY (1-4 digit number, slash, 2-digit year; leading zeros optional on the number)',
@@ -38,6 +39,7 @@ export const structure = {
           label: { es: 'DNI', en: 'ID Number' },
           validator: {
             required: true,
+            maxLength: 20,
             pattern: '^\\d{7,8}$',
             patternMessage: 'must be 7 or 8 digits',
           },
@@ -48,6 +50,7 @@ export const structure = {
           label: { es: 'Nombre', en: 'First Name' },
           validator: {
             required: true,
+            maxLength: 100,
             pattern: '^\\D+$',
             patternMessage: 'must not contain numbers',
           },
@@ -58,6 +61,7 @@ export const structure = {
           label: { es: 'Apellido', en: 'Last Name' },
           validator: {
             required: true,
+            maxLength: 100,
             pattern: '^\\D+$',
             patternMessage: 'must not contain numbers',
           },
@@ -69,6 +73,7 @@ export const structure = {
           input: 'email',
           validator: {
             nullable: true,
+            maxLength: 255,
             pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
             patternMessage: 'must be a valid email address',
           },
@@ -91,6 +96,7 @@ export const structure = {
           input: 'select',
           validator: {
             nullable: true,
+            maxLength: 50,
           },
           options: [
             { value: 'active', label: { es: 'Activo', en: 'Active' } },
@@ -116,6 +122,7 @@ export const structure = {
           readonlyOnEdit: true,
           validator: {
             required: true,
+            maxLength: 20,
           },
         },
 
@@ -124,6 +131,7 @@ export const structure = {
           label: { es: 'Nombre', en: 'Name' },
           validator: {
             required: true,
+            maxLength: 200,
           },
         },
 
@@ -152,6 +160,7 @@ export const structure = {
           label: { es: 'Departamento', en: 'Department' },
           validator: {
             nullable: true,
+            maxLength: 100,
           },
         },
       },
@@ -171,6 +180,7 @@ export const structure = {
           readonlyOnEdit: true,
           validator: {
             required: true,
+            maxLength: 20,
             pattern: '^\\d{1,4}/\\d{2}$',
             patternMessage:
               'must match pattern NNNN/YY (1-4 digit number, slash, 2-digit year; leading zeros optional on the number)',
@@ -204,6 +214,7 @@ export const structure = {
           readonlyOnEdit: true,
           validator: {
             required: true,
+            maxLength: 20,
           },
           input: 'select',
           foreignKey: {
@@ -237,6 +248,7 @@ export const structure = {
           type: 'number',
           label: { es: 'Nota', en: 'Grade' },
           input: 'number',
+          sqlType: 'NUMERIC(5,2)',
           validator: {
             nullable: true,
             minValue: 0,
@@ -250,6 +262,7 @@ export const structure = {
           input: 'select',
           validator: {
             nullable: true,
+            maxLength: 50,
           },
           options: [
             { value: 'enrolled', label: { es: 'Inscrito', en: 'Enrolled' } },

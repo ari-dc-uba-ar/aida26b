@@ -158,6 +158,13 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<global
     credentials: 'same-origin',
   });
 
+  if (response.status === 503) {
+    showErrorMessage(
+      'Estamos teniendo problemas para conectarnos con el servidor. Por favor intentá nuevamente en unos minutos. Si el problema persiste, contactá al administrador. / We are having trouble reaching the server. Please try again in a few minutes. If the issue persists, contact the administrator.',
+    );
+    throw new Error('Service unavailable');
+  }
+
   if (response.status === 401) {
     showLogin(getLocalizedText(structure.commonText.sessionExpired));
     throw new Error('Authentication required');
@@ -852,7 +859,7 @@ async function loadTableData<K extends TableKey>(tableKey: K): Promise<void> {
   } catch (error) {
     const message = (error as Error).message;
 
-    if (message !== 'Authentication required' && message !== 'Forbidden') {
+    if (message !== 'Authentication required' && message !== 'Forbidden' && message !== 'Service unavailable') {
       setMessage(getLocalizedText(structure.commonText.errorLoadingData));
       console.error(`Error loading ${tableKey}:`, error);
     }
@@ -1581,7 +1588,7 @@ function showUserForm(role: Exclude<Role, 'reader'>): void {
     } catch (error) {
       const message = (error as Error).message;
 
-      if (message !== 'Authentication required' && message !== 'Forbidden') {
+      if (message !== 'Authentication required' && message !== 'Forbidden' && message !== 'Service unavailable') {
         setMessage(getLocalizedText(structure.commonText.errorCreatingUser));
         console.error('Error creating user:', error);
       }
@@ -1718,7 +1725,7 @@ async function showAnyForm<K extends TableKey>(
     } catch (error) {
       const message = (error as Error).message;
 
-      if (message !== 'Authentication required' && message !== 'Forbidden') {
+      if (message !== 'Authentication required' && message !== 'Forbidden' && message !== 'Service unavailable') {
         setMessage(getLocalizedText(structure.commonText.errorSaving));
         console.error(
           `Error saving ${getLocalizedText(tableConfig.uiName).toLowerCase()}:`,
@@ -1779,7 +1786,7 @@ window.editRecord = async <K extends TableKey>(
   } catch (error) {
     const message = (error as Error).message;
 
-    if (message !== 'Authentication required' && message !== 'Forbidden') {
+    if (message !== 'Authentication required' && message !== 'Forbidden' && message !== 'Service unavailable') {
       setMessage(getLocalizedText(structure.commonText.errorLoadingRecord));
       console.error(`Error loading ${tableKey} for edit:`, error);
     }
@@ -1826,7 +1833,7 @@ window.deleteRecord = async <K extends TableKey>(
   } catch (error) {
     const message = (error as Error).message;
 
-    if (message !== 'Authentication required' && message !== 'Forbidden') {
+    if (message !== 'Authentication required' && message !== 'Forbidden' && message !== 'Service unavailable') {
       setMessage(getLocalizedText(structure.commonText.errorDeleting));
       console.error(`Error deleting ${tableKey}:`, error);
     }

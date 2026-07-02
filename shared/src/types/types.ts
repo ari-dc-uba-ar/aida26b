@@ -58,6 +58,7 @@ type ColumnDef = {
   nullable?: boolean;
   derivable?: {originTable: string, sqlGenerationStatement: string};
   foreignKey?: ForeignKeyDef;
+  sqlType?: string;
 }
 
 type TableStructure = {

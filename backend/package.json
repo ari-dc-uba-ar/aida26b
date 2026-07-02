@@ -8,6 +8,7 @@
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
     "migrate": "tsx src/migrate.ts",
+    "migrate:diff": "tsx src/schema-diff.ts",
     "seed-admin": "tsx src/seed-admin.ts",
     "test": "vitest run --config vitest.config.mts",
     "test:db": "vitest run --config vitest.db.config.mts"
