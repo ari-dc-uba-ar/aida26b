@@ -1,4 +1,5 @@
 import '../styles/styles.css';
+import type { CheckoutItem } from '../../shared/src/validation/checkout';
 
 export interface CartItem {
   id: string;
@@ -51,6 +52,45 @@ export class ShoppingCart {
   }
 
   // ========== API pública ==========
+  
+  async checkout(): Promise<void> {
+    if (this.items.length === 0) {
+      alert('El carrito está vacío.');
+      return;
+    }
+
+    const payload: CheckoutItem[] = this.items.map(item => ({
+      cod_stock: item.id,
+      quantity: item.quantity,
+    }));
+
+    try {
+      const response = await fetch('/api/cart/checkout', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: payload }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const message = errorData.error || errorData.message || 'Error al procesar la compra';
+        alert(message);
+        return;
+      }
+
+      const result = await response.json();
+      alert(result.message ?? 'Compra realizada con éxito.');
+
+      // Vaciar carrito local solo si el backend respondió éxito
+      this.items = [];
+      this.saveToStorage();
+      this.goHome();
+    } catch (err) {
+      console.error('Checkout error:', err);
+      alert('Error de conexión al procesar la compra.');
+    }
+  }
   addItem(product: { id: string; name: string }): void {
     const existing = this.items.find(item => item.id === product.id);
     if (existing) {
@@ -100,17 +140,6 @@ export class ShoppingCart {
 
   getItems(): CartItem[] {
     return [...this.items];
-  }
-
-  checkout(): void {
-    if (this.items.length === 0) {
-      alert('El carrito está vacío.');
-      return;
-    }
-    alert('Compra realizada con éxito.');
-    this.items = [];
-    this.saveToStorage();
-    this.goHome();
   }
 
   // ========== Navegación ==========

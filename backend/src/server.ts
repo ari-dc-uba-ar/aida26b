@@ -12,6 +12,7 @@ import { getHandler } from './routes/get';
 import { putHandler } from './routes/put';
 import { postHandler } from './routes/post';
 import { deleteHandler } from './routes/delete';
+import { checkoutHandler } from './routes/cart';
 
 // Load environment variables before reading process.env
 dotenv.config();
@@ -661,6 +662,14 @@ async function createTransportWithUser(req: Request, res: express.Response) {
     client.release();
   }
 }
+
+app.post(
+  '/api/cart/checkout',
+  requireAuth,
+  requirePasswordReady,
+  attachDbSession,
+  async (req: AuthedRequest, res) => checkoutHandler(req, res)
+);
 
 // Generic academic API routes
 app.get(
