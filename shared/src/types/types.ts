@@ -91,4 +91,31 @@ type RendererProps<K extends TableKey> = {
 
 type RendererFunc = <K extends TableKey>(props: RendererProps<K>) => HTMLElement;
 
-export type {Role, TypeMap, MyTypeNames, ColumnValidator, ColumnDef, TableStructure, InferType, TableKey, TableRecordMap, Response, ForeignKeyDef, Language, LocalizedText, RendererProps, RendererFunc};
+type ClientFormData = {
+  cuit: string;
+  email: string;
+  address: string;
+  availability: string;
+  longitude: string;
+  latitude: string;
+  name: string;
+  username: string;
+  role: string;
+}
+
+type TransportFormData = {
+  license_plate: string;
+  address: string;
+  availability: string;
+  username: string;
+  password: string;
+  role: string;
+}
+
+type FormDataMap = Record<TableKey, any> & {
+  "clients": ClientFormData;
+  "transports": TransportFormData;
+};
+
+
+export type {FormDataMap, Role, TypeMap, MyTypeNames, ColumnValidator, ColumnDef, TableStructure, InferType, TableKey, TableRecordMap, Response, ForeignKeyDef, Language, LocalizedText, RendererProps, RendererFunc};

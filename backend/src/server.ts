@@ -13,7 +13,7 @@ import { putHandler } from './routes/put';
 import { postHandler } from './routes/post';
 import { deleteHandler } from './routes/delete';
 import { checkoutHandler } from './routes/cart';
-import { TableKey, TableRecordMap } from '../../shared/src/types/types';
+import { FormDataMap, TableKey, TableRecordMap } from '../../shared/src/types/types';
 import { formatTableColumnsForQuery } from './helpers';
 
 // Load environment variables before reading process.env
@@ -491,33 +491,6 @@ app.post(
     }
   }
 );
-
-type ClientFormData = {
-  cuit: string;
-  email: string;
-  address: string;
-  availability: string;
-  longitude: string;
-  latitude: string;
-  name: string;
-  username: string;
-  role: string;
-}
-
-
-type TransportFormData = {
-  license_plate: string;
-  address: string;
-  availability: string;
-  username: string;
-  password: string;
-  role: string;
-}
-
-type FormDataMap = Record<TableKey, any> & {
-  "clients": ClientFormData;
-  "transports": TransportFormData;
-};
 
 
 async function createEntityWithUser<K extends TableKey>(tableKey: K, req: Request, res: express.Response) {
