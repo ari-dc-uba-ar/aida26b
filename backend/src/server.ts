@@ -1,7 +1,7 @@
 import express from 'express';
 import type { Request, RequestHandler } from 'express';
 import cors from 'cors';
-import { Pool, type PoolClient } from 'pg';
+import { Pool, QueryResult, type PoolClient } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -13,6 +13,8 @@ import { putHandler } from './routes/put';
 import { postHandler } from './routes/post';
 import { deleteHandler } from './routes/delete';
 import { checkoutHandler } from './routes/cart';
+import { TableKey, TableRecordMap } from '../../shared/src/types/types';
+import { formatTableColumnsForQuery } from './helpers';
 
 // Load environment variables before reading process.env
 dotenv.config();
@@ -490,112 +492,48 @@ app.post(
   }
 );
 
-/**
- * Optional special case:
- * If a client is created with `password` in the body, also create its auth user.
- * Without `password`, the request falls back to the generic postHandler below.
- */
-async function createClientWithUser(req: Request, res: express.Response) {
-  const password = readPassword(req.body.password);
-
-  if (!password) {
-    return postHandler(req, res, pool);
-  }
-
-  const {
-    cuit,
-    email,
-    address,
-    longitude,
-    latitude,
-    name,
-    username
-  } = req.body;
-
-  const client = await pool.connect();
-
-  try {
-    await client.query('BEGIN');
-
-    const { passwordHash, passwordSalt } = await auth.hashPassword(password);
-
-    const studentResult = await client.query(
-      `INSERT INTO clients
-       (cuit, email, address, longitude, latitude, name)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [
-        cuit,
-        email,
-        address,
-        longitude,
-        latitude,
-        name
-        //userResult.rows[0].id,
-      ]
-    );
-    
-    const userResult = await client.query<{ id: number }>(
-      `INSERT INTO auth.users
-       (username, email, password_hash, password_salt, role, client_cuit, transport_license, must_change_password)
-       VALUES ($1, $2, $3, $4, 'client', $5, NULL, true)
-       RETURNING id`,
-      [
-        username,
-        email || null,
-        passwordHash,
-        passwordSalt,
-        cuit
-      ]
-    );
-
-    await client.query('COMMIT');
-
-    await audit(req, 'student_user_created', 'success', {
-      username: cuit,
-      user_id: userResult.rows[0].id,
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: 'Client created successfully',
-      data: studentResult.rows[0],
-    });
-  } catch (error) {
-    await client.query('ROLLBACK');
-
-    if (isUniqueViolation(error)) {
-      return res.status(409).json({
-        success: false,
-        error: 'Client or username already exists',
-      });
-    }
-
-    console.error('Error creating student:', error);
-
-    return res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-    });
-  } finally {
-    client.release();
-  }
+type ClientFormData = {
+  cuit: string;
+  email: string;
+  address: string;
+  availability: string;
+  longitude: string;
+  latitude: string;
+  name: string;
+  username: string;
+  role: string;
 }
 
-async function createTransportWithUser(req: Request, res: express.Response) {
-  
-  const password = readPassword(req.body.password);
+
+type TransportFormData = {
+  license_plate: string;
+  address: string;
+  availability: string;
+  username: string;
+  password: string;
+  role: string;
+}
+
+type FormDataMap = Record<TableKey, any> & {
+  "clients": ClientFormData;
+  "transports": TransportFormData;
+};
+
+
+async function createEntityWithUser<K extends TableKey>(tableKey: K, req: Request, res: express.Response) {
+
+  const formData = req.body as FormDataMap[K];
+
+  // desestructuramos: lo que va en la tabla tableKey y lo que va en la de auth.users
+  const {
+    username, 
+    password,
+    role, 
+    ...entityData} = formData;
 
   if (!password) {
     return postHandler(req, res, pool);
   }
-
-  const {
-    license_plate,
-    address,
-    availability,
-    username
-  } = req.body;
 
   const client = await pool.connect();
 
@@ -604,35 +542,36 @@ async function createTransportWithUser(req: Request, res: express.Response) {
 
     const { passwordHash, passwordSalt } = await auth.hashPassword(password);
 
-    const transportResult = await client.query(
-      `INSERT INTO transports
-       (license_plate, address, availability)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [
-        license_plate,
-        address,
-        availability
-      ]
-    );
+    const columnNames = Object.keys(entityData); 
+    const columnValues = Object.values(entityData);
+
+    const [fieldNamesTuple, parametersNumbersTuple] = formatTableColumnsForQuery(columnNames);
+
+    const entityResult = await client.query(`
+      INSERT INTO ${tableKey} ${fieldNamesTuple}
+      VALUES ${parametersNumbersTuple}
+      RETURNING *
+    `, columnValues);
     
     const userResult = await client.query<{ id: number }>(
       `INSERT INTO auth.users
        (username, email, password_hash, password_salt, role, client_cuit, transport_license, must_change_password)
-       VALUES ($1, $2, $3, $4, 'driver', NULL, $5, true)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, true)
        RETURNING id`,
       [
         username,
-        `${username}@gmail.com` || null,
+        formData.email ? formData.email : `${username}@gmail.com`,
         passwordHash,
         passwordSalt,
-        license_plate,
+        role,
+        formData?.cuit || null,
+        formData?.license_plate || null
       ]
     );
 
     await client.query('COMMIT');
 
-    await audit(req, 'student_user_created', 'success', {
+    await audit(req, `${tableKey}_user_created`, 'success', {
       username: username,
       user_id: userResult.rows[0].id,
     });
@@ -640,7 +579,7 @@ async function createTransportWithUser(req: Request, res: express.Response) {
     return res.status(201).json({
       success: true,
       message: 'Client created successfully',
-      data: userResult.rows[0],
+      data: entityResult.rows[0],
     });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -648,11 +587,11 @@ async function createTransportWithUser(req: Request, res: express.Response) {
     if (isUniqueViolation(error)) {
       return res.status(409).json({
         success: false,
-        error: 'Transport or username already exists',
+        error: `${tableKey} or username already exists`,
       });
     }
 
-    console.error('Error creating student:', error);
+    console.error(`Error creating ${tableKey}:`, error);
 
     return res.status(500).json({
       success: false,
@@ -661,6 +600,7 @@ async function createTransportWithUser(req: Request, res: express.Response) {
   } finally {
     client.release();
   }
+
 }
 
 app.post(
@@ -690,10 +630,11 @@ app.post(
   requireAcademicWrite,
   async (req: AuthedRequest, res) => {
     if (req.params.tableName === 'clients') {
-      return createClientWithUser(req, res);
+      //return createClientWithUser(req, res);
+      return createEntityWithUser("clients", req, res);
     }
     if (req.params.tableName === 'transports') {
-      return createTransportWithUser(req, res);
+      return createEntityWithUser("transports", req, res);
     }
     return postHandler(req, res, req.dbClient ?? pool);
   }

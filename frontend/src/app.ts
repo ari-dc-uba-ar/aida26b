@@ -1771,6 +1771,14 @@ async function showAnyForm<K extends TableKey>(
       payload.username = (document.getElementById(`${tableKey}-username`) as HTMLInputElement).value;
     }
 
+    if (tableKey === 'clients') {
+      payload.role = "client"
+    }
+
+    if (tableKey === "transports") {
+      payload.role = "driver"
+    }
+
     const pkAndTheirValues = getPkFields(tableKey).map((pkFieldName) => {
       const value =
         payload[pkFieldName] ??
