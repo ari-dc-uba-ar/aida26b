@@ -45,8 +45,10 @@ sencilla sin necesidad de modificar el sistema en sí.
 ## Refactorizacion?
 - Habra que quitar los condicionales que miran isStocksTable dentro de renderAnyTable, ya que rompe con la generalizacion. Seria buena idea separarlo, luego ver si generalizar.
 - En frontend/src/app.ts, tenemos en renderAnyTable la creacion de botones. La estructura de crear los botones son muy similares. Se podria hacer un pre-createButton donde se puede incluir el JSON.stringify(pkValues) que usan las acciones por record, el addEventListener para el click, y tambien un post-createButton donde podria incluirse la forma en que se hace el append a la tabla.
-- Quitar código repetido de la creación de usuarios (chofer/cliente): seguramente hay que ver cómo se crean queries genéricas (en el back ya habían funciones útiles para eso).
-
+- ~Quitar código repetido de la creación de usuarios (chofer/cliente): seguramente hay que ver cómo se crean queries genéricas (en el back ya habían funciones útiles para eso).~
+- Los tipos de FormData de types.ts podrían inferirse a partir del struct de single source of truth (por ejemplo, agregando algún campo para decidir si un campo va en el form de creación y añadiendo con un "&" password, username y roles)
+- Podríamos generalizar un poco más la tabla de auth.users, ahora mismo queda NULL o bien el campo para la placa del coche o el de
+clients, pero quizás es over-engineering para nuestro sistema
 
 ## "INFORME"
 
