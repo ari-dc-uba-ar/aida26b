@@ -760,11 +760,17 @@ function renderAnyTable<K extends TableKey>(
     headerRow.appendChild(th);
   });
 
-  // Columna del carrito (solo para stocks, visible para todos)
+  // HTML del carrito (solo para stocks, visible para todos)
   if (isStocksTable) {
+    
     const cartHeader = document.createElement('th');
     cartHeader.textContent = getLocalizedText(structure.commonText.cartActions);
     headerRow.appendChild(cartHeader);
+
+    const totalAvailableStockHeader = document.createElement('th');
+    totalAvailableStockHeader.textContent = getLocalizedText(structure.commonText.totalAvailableStock);
+    headerRow.appendChild(totalAvailableStockHeader);
+
   }
 
   // Columna de acciones (solo si el usuario tiene permisos de escritura)
@@ -794,9 +800,17 @@ function renderAnyTable<K extends TableKey>(
       row.appendChild(td);
     });
 
-    // Celda del carrito para stocks
+    // Celdas del carrito y quantity para stocks
+
     if (isStocksTable) {
-      const stockRecord = record as TableRecordMap['stocks'];
+
+      type StockWithTotal = TableRecordMap['stocks'] & {
+        items_total_available: number; // O el tipo de dato que corresponda (ej. string si viene de un SUM de Postgres)
+      };
+
+      // el 'as unknown' es para que no se ponga la gorra el compilador (lo dice el warning si lo quitamos), porque estamos convirtiendo un tipo genérico en algo re específico
+      // y asume que nos estamos equivocando 
+      const stockRecord = record as unknown as StockWithTotal ;
       const cartTd = document.createElement('td');
       const productId = String(stockRecord.cod_stock);
       const productName = String(stockRecord.name);
@@ -810,6 +824,11 @@ function renderAnyTable<K extends TableKey>(
       const qtySpan = document.createElement('span');
       qtySpan.textContent = String(currentQty);
       qtySpan.className = 'qty-value';
+
+      const availableQtyTd = document.createElement('td');
+      const availableQtySpan = document.createElement('span');
+      availableQtySpan.textContent = String(stockRecord.items_total_available);
+
 
       // Boton - 
       const decBtn = document.createElement('button');
@@ -836,7 +855,9 @@ function renderAnyTable<K extends TableKey>(
       controlDiv.appendChild(qtySpan);
       controlDiv.appendChild(incBtn);
       cartTd.appendChild(controlDiv);
+      availableQtyTd.appendChild(availableQtySpan);
       row.appendChild(cartTd);
+      row.appendChild(availableQtyTd);
     }
 
     // Acciones de admin (editar/eliminar)

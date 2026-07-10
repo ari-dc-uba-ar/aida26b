@@ -42,6 +42,11 @@ function getReferencedRelations(tableName: TableKey): TableKey[]{
   return (Array.isArray(refs) ? refs : []) as TableKey[];
 }
 
+function getReferencedByToCountRelations(tableName: TableKey): TableKey[]{
+  const refs = (structure.tables[tableName] as TableStructure).referencedByCount;
+  return (Array.isArray(refs) ? refs : []) as TableKey[];
+}
+
 function getRequiredFields(tableName: TableKey){
   const tableColumns: Record<string, ColumnDef> = structure.tables[tableName].columns;
   return Object.entries(tableColumns).filter(([fieldName, column]) => column.required);
@@ -57,4 +62,4 @@ function formatTableColumnsForQuery(fieldsNames: string[], from: number = 1): st
   return [tupleContent, tupleWithReplaceParameters];
 }
 
-export { getEntityName, tryQuery, columnNamesEqualsNumber, getNotDerivableFields, getRequiredFields, formatTableColumnsForQuery, getReferencedRelations, getDerivableFields };
+export { getEntityName, tryQuery, columnNamesEqualsNumber, getNotDerivableFields, getRequiredFields, formatTableColumnsForQuery, getReferencedRelations, getReferencedByToCountRelations, getDerivableFields };

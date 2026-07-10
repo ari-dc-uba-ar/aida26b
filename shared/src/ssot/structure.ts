@@ -135,6 +135,7 @@ export const structure = {
       uiName: {es: "Stocks", en: "Stocks"},
       title: {es: "Stock", en: "Stock"},
       addButtonLabel: {es: "Añadir Stock", en: "Add Stock"},
+      referencedByCount: ['items'],
     } satisfies TableStructure , 
     clients: {
       columns: {
@@ -401,6 +402,7 @@ export const structure = {
 
 	// Cart
     cartActions: { es: 'Items en Carrito', en: 'Items in Cart'},
+    totalAvailableStock: {es: "Total Disponible", en: "Total Available"},
 
     // Auth / session messages
     sessionExpired: { es: 'La sesión expiró', en: 'Session expired' },

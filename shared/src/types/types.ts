@@ -68,7 +68,8 @@ type TableStructure = {
   uiName: LocalizedText
   title?: LocalizedText
   addButtonLabel?: LocalizedText
-  referencedTables?: string[]
+  referencedTables?: string[],
+  referencedByCount?: string[] // para cada registro de mi tabla, cuenta cuántos los referencian en c/u de las tablas pasadas (para saber cuántos itesm hay de cada stock en principio) 
 }
 
 type InferType<FieldDefs extends Record<string, ColumnDef>> = {

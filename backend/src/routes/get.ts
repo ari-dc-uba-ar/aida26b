@@ -8,6 +8,7 @@ import {
   getReferencedRelations,
   tryQuery,
   columnNamesEqualsNumber,
+  getReferencedByToCountRelations,
 } from "../helpers";
 
 import { getPkFields } from "../../../shared/src/utils/utils";
@@ -311,16 +312,66 @@ function getSelectStatement(tableName: TableKey): string {
 
 function getBaseSelectQuery(tableName: TableKey): string {
   const referencedRelations = getReferencedRelations(tableName);
+  const referencedByToCount = getReferencedByToCountRelations(tableName);
+
+  let query = "";
 
   if (referencedRelations.length > 0) {
-    return `
+    query =  `
       ${getSelectStatement(tableName)}
       FROM ${tableName} ${getEntityName(tableName)}
       ${getJoinsStatements(tableName, referencedRelations)}
     `;
+
+    return query;
+  } else {
+    query = `SELECT ${tableName}.* FROM ${tableName}`;
   }
 
-  return `SELECT * FROM ${tableName}`;
+  // para cada tabla target, agrega una columna nuestra tableName que sea la cantidad de veces que en aquella se referencia
+  // utilizando las que acá son PK como FK. En el caso de la tabla items, hardcodeamos para que tome en cuenta
+  // sólo las referencias de los items que no tienen orden asignada 
+  if (referencedByToCount.length > 0) {
+
+    // modificamos el SELECT por si traía todo pelado
+    if (query.trim().startsWith('SELECT *')) {
+      query = `SELECT ${tableName}.* FROM ${tableName}`;
+    }
+
+    const pkFields = getPkFields(tableName);
+
+    referencedByToCount.forEach((targetTable) => {
+
+
+      const alias = `${targetTable}_grouped`;
+
+      const pkFieldsEqualityStatements = pkFields.map(
+        (pk) => `${tableName}.${pk} = ${alias}.${pk}`
+      );
+
+      const whereClause = targetTable === 'items' ? 'WHERE order_uuid IS NULL' : '';
+
+      // modificamos el SELECT para incluir la nueva columna contadora
+      query = query.replace(
+        `SELECT ${tableName}.*`, 
+        `SELECT ${tableName}.*, COALESCE(${alias}.total, 0) AS ${targetTable}_total_available`
+      );
+
+      query += `
+        LEFT JOIN (
+          SELECT ${pkFields.join(",")}, COUNT(*) as total 
+          FROM ${targetTable}
+          ${whereClause}
+          GROUP BY ${pkFields.join(",")}
+        ) ${alias} ON ${pkFieldsEqualityStatements.join(" AND ")}
+      `;
+    });
+    
+    return query;
+
+  }
+
+  return query;
 }
 
 function getListFilterConfig(tableName: TableKey): Record<string, ColumnDef> {

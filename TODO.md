@@ -17,8 +17,8 @@ maneja automaticamente que almacenes, transporte, e items asignar.
 ## Stock y compras
 - Cuando se compra, internamente el sistema elige automaticamente los almacenes y el transporte
 mas optimo para llevar el producto al cliente. Haria falta un endpoint para realizar al compra y procesar el pedido.
-- Calcular cuanto de un stock hay disponible para el cliente. Esto podria involucrar un JOIN generico o especifico
-por tabla.
+- ~Calcular cuanto de un stock hay disponible para el cliente. Esto podria involucrar un JOIN generico o especifico
+por tabla.~ 
 - Cuando se logra elegir el item para el pedido, se marca como "preparando" en los pedidos.
 - Una vez se marca el transporte como "Viajando", se marcan todos los pedidos asociados a ese transporte como
 "Viajando" tambien.
@@ -49,6 +49,15 @@ sencilla sin necesidad de modificar el sistema en sí.
 - Los tipos de FormData de types.ts podrían inferirse a partir del struct de single source of truth (por ejemplo, agregando algún campo para decidir si un campo va en el form de creación y añadiendo con un "&" password, username y roles)
 - Podríamos generalizar un poco más la tabla de auth.users, ahora mismo queda NULL o bien el campo para la placa del coche o el de
 clients, pero quizás es over-engineering para nuestro sistema
+- El JOIN para ver la cantidad de items es bastante genérico, pero sólo funciona si en el structure del single source of truth
+la tabla de la que partimos NO tiene nada en su referencedRelations. Si hay un referencedRelations no nulo, ignora lo de contar
+la cantidad de referencias en otras tablas. Podría verse de hacer que puedan andar ambas a la vez.
+
+## Bugs
+
+- El modal del carrito está siempre en tono claro
+- Tras comprar items y volver a la view de stocks, no se actualiza inmediatamente la columna de Total Available (habría que hacer que se vuelva a llamar al endpoint de la API para el GET de la misma)
+- Si nos loggeamos como un usuario A (ej admin) y metemos cosas al carrito, nos desloggeamos, loggeamos como un usuario B (ej un client), el B tiene en su carrito lo que puso el A
 
 ## "INFORME"
 
