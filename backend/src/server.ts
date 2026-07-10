@@ -578,7 +578,7 @@ async function createEntityWithUser<K extends TableKey>(tableKey: K, req: Reques
 
     return res.status(201).json({
       success: true,
-      message: 'Client created successfully',
+      message: `${tableKey} created successfully`,
       data: entityResult.rows[0],
     });
   } catch (error) {
@@ -630,7 +630,6 @@ app.post(
   requireAcademicWrite,
   async (req: AuthedRequest, res) => {
     if (req.params.tableName === 'clients') {
-      //return createClientWithUser(req, res);
       return createEntityWithUser("clients", req, res);
     }
     if (req.params.tableName === 'transports') {
