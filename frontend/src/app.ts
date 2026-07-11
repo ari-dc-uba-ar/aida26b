@@ -139,6 +139,7 @@ function showApp(user: AuthUser): void {
 
   currentUser = user;
 
+  // createTableNavButtons necesita un currentUser actualizado, movemos todo a esta función
   createTableNavButtons();
   syncUrlToState();
   applyLanguageToUI();
