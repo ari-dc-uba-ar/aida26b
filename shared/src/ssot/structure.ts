@@ -438,6 +438,11 @@ export const structure = {
     cartActions: { es: 'Items en Carrito', en: 'Items in Cart'},
     totalAvailableStock: {es: "Total Disponible", en: "Total Available"},
 
+  // Driver specific
+    driverActions: {es: "Actualizar Estado", en: "Update Status"},
+    deliverOrder: {es: "Entregado", en: "Delivered"},
+    couldntDeliverOrder: {es: "No se pudo entregar", en: "Couldn't Deliver"},
+
     // Auth / session messages
     sessionExpired: { es: 'La sesión expiró', en: 'Session expired' },
     passwordChangeRequired: { es: 'Hay que cambiar la contraseña', en: 'Password change required' },

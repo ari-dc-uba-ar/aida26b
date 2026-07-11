@@ -101,7 +101,7 @@ const openCartBtn = document.getElementById('cart-btn') as HTMLButtonElement;
 
 let currentUser: AuthUser | null = null;
 
-function canWriteAcademic(): boolean {
+function canWriteLogistic(): boolean {
   return currentUser?.role === 'admin' || currentUser?.role === 'editor';
 }
 
@@ -616,7 +616,7 @@ function showSection(section: TableKey, pushState = true): void {
     getLocalizedText(tableConfig.addButtonLabel) ||
     `${getLocalizedText(structure.commonText.add)} ${getLocalizedText(tableConfig.uiName)}`;
 
-  addRecordBtn.style.display = canWriteAcademic() ? 'inline-block' : 'none';
+  addRecordBtn.style.display = canWriteLogistic() ? 'inline-block' : 'none';
 
   if (adminActions) {
     adminActions.hidden = currentUser?.role !== 'admin' || section !== 'clients';
@@ -748,8 +748,9 @@ function renderAnyTable<K extends TableKey>(
   const thead = sharedTable.querySelector('thead')!;
   const tbody = sharedTable.querySelector('tbody')!;
   const tableStructure = structure.tables[tableKey];
-  const showActions = canWriteAcademic();
+  const showActions = canWriteLogistic();
   const isStocksTable = tableKey === 'stocks';
+  const showOrdersStatusActions = tableKey === 'orders' && currentUser!.role == "driver";
 
   thead.innerHTML = '';
   tbody.innerHTML = '';
@@ -790,6 +791,13 @@ function renderAnyTable<K extends TableKey>(
     totalAvailableStockHeader.textContent = getLocalizedText(structure.commonText.totalAvailableStock);
     headerRow.appendChild(totalAvailableStockHeader);
 
+  }
+
+  // HTML específico para que los drivers puedan actualizar el estado de sus pedidos
+  if (showOrdersStatusActions) {
+    const driverActionsHeader = document.createElement('th');
+    driverActionsHeader.textContent = getLocalizedText(structure.commonText.driverActions);
+    headerRow.appendChild(driverActionsHeader);
   }
 
   // Columna de acciones (solo si el usuario tiene permisos de escritura)
@@ -879,6 +887,41 @@ function renderAnyTable<K extends TableKey>(
       row.appendChild(availableQtyTd);
     }
 
+
+    // acciones del driver sobre los pedidos
+    if (showOrdersStatusActions) {
+      const driverActionsTd = document.createElement('td');
+      driverActionsTd.className = 'actions';
+
+      const pkValues = pkFields.map((field) =>
+        String(record[field as keyof TableRecordMap[K]] ?? '')
+      );
+
+      const deliverBtn = document.createElement('button');
+      deliverBtn.className = 'delivered-btn';
+      deliverBtn.textContent = getLocalizedText(structure.commonText.deliverOrder);
+      deliverBtn.dataset.pk = JSON.stringify(pkValues);
+      deliverBtn.addEventListener('click', (event) => {
+        
+        //LOGICA PARA PEDIRLE AL DRIVER QUE INGRESE EL CUIT DEL CLIENT
+
+      });
+
+      const couldntDeliverBtn = document.createElement('button');
+      couldntDeliverBtn.className = 'couldnt-deliver-btn';
+      couldntDeliverBtn.textContent = getLocalizedText(structure.commonText.couldntDeliverOrder);
+      couldntDeliverBtn.dataset.pk = JSON.stringify(pkValues);
+      couldntDeliverBtn.addEventListener('click', (event) => {
+        
+        // LOGICA PARA HACER UNA WINDOW DE CONFIRMACIÓN DE QUE NO SE PUDO ENTREGAR EL PEDIDO
+
+      });
+
+      driverActionsTd.appendChild(deliverBtn);
+      driverActionsTd.appendChild(couldntDeliverBtn);
+      row.appendChild(driverActionsTd);
+    }
+ 
     // Acciones de admin (editar/eliminar)
     if (showActions) {
       const actionsTd = document.createElement('td');
@@ -1722,7 +1765,7 @@ async function showAnyForm<K extends TableKey>(
   tableKey: K,
   record?: Partial<TableRecordMap[K]>
 ): Promise<void> {
-  if (!canWriteAcademic()) {
+  if (!canWriteLogistic()) {
     setMessage(getLocalizedText(structure.commonText.noEditPermission));
     return;
   }

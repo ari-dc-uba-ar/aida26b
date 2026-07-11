@@ -180,6 +180,16 @@ button:hover {
     color: white;
 }
 
+.delivered-btn {
+    background-color: #3a93ff;
+    color: white;
+}
+
+.couldnt-deliver-btn {
+    background-color: var(--danger);
+    color: white;
+}
+
 .add-btn {
     background-color: var(--primary);
     color: white;
