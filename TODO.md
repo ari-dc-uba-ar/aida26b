@@ -24,6 +24,7 @@ por tabla.~
 "Viajando" tambien.
 
 ## Roles y autentication
+- ~Visibilidad por tablas según cliente y chofer~
 - Visibilidad por columnas segun cliente y chofer.
 - ~Visibilidad por filas según cliente y chofer.~
 - Restringuir acceso a endpoints basado en roles.
