@@ -62,6 +62,13 @@ type ColumnDef = {
   foreignKey?: ForeignKeyDef;
 }
 
+type Permissions = {
+  read: Role[]; // define qué roles pueden ver esta tabla
+  create: Role[]; // define qué roles pueden hacer requests POST a la API genérica de la tabla
+  update: Role[]; // define qué roles pueden hacer requests PUT a la API genérica de la tabla
+  delete: Role[]; // idem con delete
+}
+
 type TableStructure = {
   columns: Record<string, ColumnDef>
   pk: string | string[]
@@ -70,6 +77,7 @@ type TableStructure = {
   addButtonLabel?: LocalizedText
   referencedTables?: string[],
   referencedByCount?: string[] // para cada registro de mi tabla, cuenta cuántos los referencian en c/u de las tablas pasadas (para saber cuántos itesm hay de cada stock en principio) 
+  permissions: Permissions; // para decidir quién puede ver cada tabla y qué puede hacer sobre ella
 }
 
 type InferType<FieldDefs extends Record<string, ColumnDef>> = {

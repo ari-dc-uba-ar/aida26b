@@ -53,6 +53,12 @@ export const structure = {
       uiName: { es: 'Almacenes', en: 'Warehouses' },
       title: { es: 'Almacén', en: 'Warehouse' },
       addButtonLabel: { es: 'Añadir Almacén', en: 'Add Warehouse' },
+      permissions: {
+        read: ["admin"],
+        create: ["admin"],
+        update: ["admin"],
+        delete: ["admin"],
+      }
     } satisfies TableStructure,
     transports: {
       columns: {
@@ -112,6 +118,12 @@ export const structure = {
       title: { es: 'Transporte', en: 'Transport' },
       addButtonLabel: { es: 'Añadir Transporte', en: 'Add Transport' },
       referencedTables: ['warehouses'],
+      permissions: {
+        read: ["admin"],
+        create: ["admin"],
+        update: ["admin"],
+        delete: ["admin"],
+      }
     } satisfies TableStructure ,
     stocks: {
       columns: {
@@ -136,6 +148,12 @@ export const structure = {
       title: {es: "Stock", en: "Stock"},
       addButtonLabel: {es: "Añadir Stock", en: "Add Stock"},
       referencedByCount: ['items'],
+      permissions: {
+        read: ["admin", "client"],
+        create: ["admin"],
+        update: ["admin"],
+        delete: ["admin"],
+      }
     } satisfies TableStructure , 
     clients: {
       columns: {
@@ -196,6 +214,12 @@ export const structure = {
       uiName: {es: "Clientes", en: "Clients"},
       title: {es: "Cliente", en: "Client"},
       addButtonLabel: {es: "Añadir Cliente", en: "Add Cliente"},
+      permissions: {
+        read: ["admin"],
+        create: ["admin"],
+        update: ["admin"],
+        delete: ["admin"],
+      }
     } satisfies TableStructure,
     orders: {
       columns: {
@@ -267,7 +291,12 @@ export const structure = {
       uiName: { es: 'Pedidos', en: 'Orders' },
       title: { es: 'Pedido', en: 'Order' },
       addButtonLabel: { es: 'Agregar Pedido', en: 'Add Order' },
-     // referencedTables: ['clients', 'transports'],
+      permissions: {
+        read: ["admin", "client", "driver"],
+        create: ["admin"], // los clients pueden crear pedidos pero vía la api específica del carrito
+        update: ["admin"],  // idem
+        delete: ["admin"],
+      }
     } satisfies TableStructure,
 
     items: {
@@ -325,7 +354,12 @@ export const structure = {
       uiName: { es: 'Items', en: 'Items' },
       title: { es: 'Item', en: 'Item' },
       addButtonLabel: { es: 'Agregar Item', en: 'Add Item' },
-      //referencedTables: ['stocks', 'orders', 'warehouses'],
+      permissions: {
+        read: ["admin"],
+        create: ["admin"],
+        update: ["admin"],
+        delete: ["admin"],
+      }
     } satisfies TableStructure,
   },
 

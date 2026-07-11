@@ -139,11 +139,18 @@ function showApp(user: AuthUser): void {
 
   currentUser = user;
 
+  createTableNavButtons();
+  syncUrlToState();
+  applyLanguageToUI();
+  initializeCart();
+
   authSection.style.display = 'none';
   passwordSection.style.display = 'none';
   appShell.style.display = 'block';
   document.getElementById('cart-section')!.style.display = 'none';
   currentUserEl.textContent = `${user.username} (${user.role})`;
+
+  activeTableKey = getReadableTableKeys(tableKeys, currentUser.role)[0]; // asumimos que cada rol tiene al menos una tabla visible
 
   showSection(activeTableKey, false);
 }
@@ -520,8 +527,6 @@ function applyStaticLanguageToUI(): void {
   setLocalizedElementText('new-password-label', structure.commonText.newPassword);
   setLocalizedElementText('password-submit-btn', structure.commonText.update);
   setLocalizedElementText('logout-btn', structure.commonText.logout);
-  //setLocalizedElementText('add-teacher-btn', structure.commonText.addProfessor);
-  //setLocalizedElementText('add-admin-btn', structure.commonText.addAdmin);
 }
 
 function updateNavButtonsText(): void {
@@ -536,10 +541,23 @@ function updateNavButtonsText(): void {
   });
 }
 
+
+function getReadableTableKeys(tableKeys: TableKey[], role: Role) {
+  return tableKeys.filter(tableKey => (structure.tables[tableKey].permissions.read as readonly Role[]).includes(role))
+}
+
+// sólo se llama cuando el usuario ya está loggeado, vale que currentUser != NULL
 function createTableNavButtons(): void {
   navContainer.innerHTML = '';
 
-  for (const key of tableKeys) {
+  if (!currentUser) {
+    showErrorMessage("No user was detected logged in");
+  }
+
+  const readableTableKeys = getReadableTableKeys(tableKeys, currentUser!.role);
+
+  for (const key of readableTableKeys) {
+
     const config = structure.tables[key];
     const button = document.createElement('button');
 
@@ -2054,10 +2072,6 @@ openCartBtn.addEventListener('click', async () => {
 });
 
 async function initialize(): Promise<void> {
-  createTableNavButtons();
-  syncUrlToState();
-  applyLanguageToUI();
-  initializeCart();
 
   try {
     const response = await fetch(`${API_BASE}/auth/me`, {
@@ -2076,6 +2090,7 @@ async function initialize(): Promise<void> {
     showLogin();
     console.error('Session check failed:', error);
   }
+
 }
 
 initialize();
