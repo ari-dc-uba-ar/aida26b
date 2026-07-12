@@ -27,6 +27,7 @@ por tabla.~
 - ~Visibilidad por tablas según cliente y chofer~
 - Visibilidad por columnas segun cliente y chofer.
 - ~Visibilidad por filas según cliente y chofer.~
+- Visibilidad de botones de acciones por roles (i.e: agregar warehouse, eliminar o editar filas, carrito, etc).
 - Restringuir acceso a endpoints basado en roles.
 
 ## Visual
