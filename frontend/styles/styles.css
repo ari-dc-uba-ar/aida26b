@@ -534,7 +534,8 @@ button {
 }
 
 #cart-page {
-  background: white;
+  background: var(--surface);
+  color: var(--text);
   padding: 20px;
   border-radius: 8px;
   max-width: 500px;
@@ -542,6 +543,8 @@ button {
   max-height: 80%;
   overflow-y: auto;
   font-family: sans-serif;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
 
 /* Estilos internos del carrito */
@@ -551,11 +554,12 @@ button {
 }
 
 .cart-item {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
   align-items: center;
+  gap: 15px;
   padding: 8px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border);
 }
 
 .quantity-control {
@@ -567,73 +571,70 @@ button {
 .quantity-control button {
   width: 28px;
   height: 28px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.quantity-control button:hover {
+  background: var(--border);
 }
 
 .btn-remove {
-  background: #f44336;
+  background: var(--danger);
   color: white;
   border: none;
   border-radius: 4px;
   padding: 4px 10px;
   cursor: pointer;
 }
+.btn-remove:hover {
+  opacity: 0.9;
+}
 
 .btn-checkout {
-  background: #2196F3;
+  background: var(--primary);
   color: white;
   border: none;
+  border-radius: 4px;
   padding: 10px 20px;
   font-size: 1em;
   cursor: pointer;
 }
+.btn-checkout:hover {
+  background: var(--primary-hover);
+}
+.btn-checkout:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .btn-back {
-  background: #ddd;
-  border: 1px solid #aaa;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 8px 16px;
   cursor: pointer;
 }
-
-.btn-checkout {
-    background: #2196F3;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    font-size: 1em;
+.btn-back:hover {
+  background: var(--border);
 }
 
-.quantity-control {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.quantity-control button {
-    width: 28px;
-    height: 28px;
-}
-
-#cart-section {
-  padding: 20px;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.cart-quantity-control {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
 .qty-btn {
   width: 26px;
   height: 26px;
   padding: 0;
   font-weight: bold;
   cursor: pointer;
-  border: 1px solid #aaa;
-  background: #f0f0f0;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
   border-radius: 4px;
+}
+.qty-btn:hover:not(:disabled) {
+  background: var(--border);
 }
 .qty-btn:disabled {
   opacity: 0.5;

@@ -58,7 +58,7 @@ type ColumnDef = {
   readonlyOnEdit?: boolean;
   validator?: ColumnValidator;
   nullable?: boolean;
-  derivable?: {originTable: string, sqlGenerationStatement: string};
+  derivable?: { originTable: string, sqlGenerationStatement: string };
   foreignKey?: ForeignKeyDef;
 }
 
@@ -75,6 +75,7 @@ type TableStructure = {
   uiName: LocalizedText
   title?: LocalizedText
   addButtonLabel?: LocalizedText
+  cancelButtonLabel?: LocalizedText
   referencedTables?: string[],
   referencedByCount?: string[] // para cada registro de mi tabla, cuenta cuántos los referencian en c/u de las tablas pasadas (para saber cuántos itesm hay de cada stock en principio) 
   permissions: Permissions; // para decidir quién puede ver cada tabla y qué puede hacer sobre ella
@@ -127,4 +128,4 @@ type FormDataMap = Record<TableKey, any> & {
 };
 
 
-export type {FormDataMap, Role, TypeMap, MyTypeNames, ColumnValidator, ColumnDef, TableStructure, InferType, TableKey, TableRecordMap, Response, ForeignKeyDef, Language, LocalizedText, RendererProps, RendererFunc};
+export type { FormDataMap, Role, TypeMap, MyTypeNames, ColumnValidator, ColumnDef, TableStructure, InferType, TableKey, TableRecordMap, Response, ForeignKeyDef, Language, LocalizedText, RendererProps, RendererFunc };

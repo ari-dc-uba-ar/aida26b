@@ -162,6 +162,15 @@ const requireAcademicWrite: RequestHandler = async (req, res, next) => {
   }
 
   if (
+    role === 'client' &&
+    req.method === 'PUT' &&
+    tableName === 'orders' &&
+    req.query.cancel === 'true'
+  ) {
+    return next();
+  }
+
+  if (
     role === 'driver' &&
     req.method === 'PUT' &&
     tableName === 'orders'

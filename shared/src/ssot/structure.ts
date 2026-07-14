@@ -284,6 +284,7 @@ export const structure = {
             },
             { value: 'delivered', label: { es: 'Entregado', en: 'Delivered' } },
             { value: `failed`, label: {es: 'No Entregado', en: `Couldn't Deliver`}},
+            { value: 'cancelled', label: { es: 'Cancelado', en: 'Cancelled' } },
           ],
         },
       },
@@ -291,6 +292,7 @@ export const structure = {
       uiName: { es: 'Pedidos', en: 'Orders' },
       title: { es: 'Pedido', en: 'Order' },
       addButtonLabel: { es: 'Agregar Pedido', en: 'Add Order' },
+	  cancelButtonLabel: { es: 'Cancelar Pedido', en: 'Cancel Order' },
       permissions: {
         read: ["admin", "client", "driver"],
         create: ["admin"], // los clients pueden crear pedidos pero vía la api específica del carrito
@@ -506,5 +508,11 @@ export const structure = {
       es: '¿Está seguro de que desea eliminar este',
       en: 'Are you sure you want to delete this',
     },
+
+	// Cancel confirmation
+	cancelConfirm: {
+	  es: '¿Está seguro de que desea cancelar',
+	  en: 'Are you sure you want to cancel',
+	}
   } satisfies Record<string, LocalizedText>,
 };
