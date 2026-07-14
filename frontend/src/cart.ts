@@ -12,11 +12,12 @@ type OnRemoveCallback = (itemId: string, itemName: string) => void;
 
 export class ShoppingCart {
   private items: CartItem[] = [];
-  private storageKey = 'vanilla-cart';
   private onItemRemove?: OnRemoveCallback;
   private overlay!: HTMLDivElement;
   private appShell!: HTMLElement;
   private isAuthenticated: () => boolean;
+  private getUsername: () => string;
+  private onBackHome?: () => void;
 
   private cacheDOMElements(): void {
     this.appShell = document.getElementById('app-shell')!;
@@ -26,9 +27,11 @@ export class ShoppingCart {
    * @param onItemRemove - callback único que se ejecuta cuando cualquier ítem es eliminado.
    * Recibe el id y nombre del producto eliminado.
    */
-  constructor(onItemRemove?: OnRemoveCallback, isAuthenticated = () => true) {
-	this.isAuthenticated = isAuthenticated;
+  constructor(getUsername: () => string, onItemRemove?: OnRemoveCallback, isAuthenticated = () => true, onBackHome?: () => void) {
+    this.isAuthenticated = isAuthenticated;
+    this.getUsername = getUsername;
     this.onItemRemove = onItemRemove;
+    this.onBackHome = onBackHome;
     this.loadFromStorage();
     this.createOverlay();
     this.cacheDOMElements();
@@ -36,23 +39,34 @@ export class ShoppingCart {
   }
 
   // ---------- Persistencia ----------
+  private getStorageKey(): string {
+    const username = this.getUsername();
+    return username ? `vanilla-cart-${username}` : 'vanilla-cart';
+  }
+
   private loadFromStorage(): void {
-    const stored = localStorage.getItem(this.storageKey);
+    const stored = localStorage.getItem(this.getStorageKey());
     if (stored) {
       try {
         this.items = JSON.parse(stored);
       } catch {
         this.items = [];
       }
+    } else {
+      this.items = [];
     }
   }
 
   private saveToStorage(): void {
-    localStorage.setItem(this.storageKey, JSON.stringify(this.items));
+    localStorage.setItem(this.getStorageKey(), JSON.stringify(this.items));
+  }
+
+  reload(): void {
+    this.loadFromStorage();
   }
 
   // ========== API pública ==========
-  
+
   async checkout(): Promise<void> {
     if (this.items.length === 0) {
       alert('El carrito está vacío.');
@@ -151,7 +165,7 @@ export class ShoppingCart {
   goHome(): void {
     this.hideCartOverlay();
     const cleanUrl = window.location.pathname + window.location.search;
-	  history.replaceState(null, '', cleanUrl);  
+    history.replaceState(null, '', cleanUrl);
     window.dispatchEvent(new HashChangeEvent('hashchange'));
   }
 
@@ -179,6 +193,7 @@ export class ShoppingCart {
     } else {
       console.log("Ocultando carrito");
       this.hideCartOverlay();
+      this.onBackHome?.();
     }
   }
 
@@ -190,7 +205,7 @@ export class ShoppingCart {
 
   private hideCartOverlay(): void {
     this.overlay.style.display = 'none';
-    this.appShell.style.display='block';
+    this.appShell.style.display = 'block';
   }
 
   private renderCartIfActive(): void {

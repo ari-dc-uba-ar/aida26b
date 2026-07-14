@@ -31,7 +31,7 @@ type AuthUser = {
   must_change_password: boolean;
 };
 
-var cart : ShoppingCart;
+var cart: ShoppingCart;
 
 // -----------------------------------------------------------------------------
 // Localization
@@ -159,9 +159,9 @@ function showApp(user: AuthUser): void {
 async function apiFetch(path: string, options: RequestInit = {}): Promise<globalThis.Response> {
   const headers = options.body
     ? {
-        'Content-Type': 'application/json',
-        ...(options.headers as Record<string, string> | undefined),
-      }
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string> | undefined),
+    }
     : options.headers;
 
   const response = await fetch(`${API_BASE}${path}`, {
@@ -712,13 +712,23 @@ window.addEventListener('languagechange', (event) => {
 });
 
 function initializeCart(): void {
-  cart = new ShoppingCart((itemId, itemName) => {
-    // Fallback: se dispara cada vez que un ítem es eliminado del carrito
-    // Esto se tendra que usar para visualizar un contador de cuantos items de un tipo se agregaron/quitaron al carrito.
-    showSuccessMessage(`${itemName} eliminado del carrito`);
-    // window.dispatchEvent(new CustomEvent('cart-item-removed', { detail: { id: itemId, name: itemName } }));
-
-  }, () => currentUser !== null);
+  if (cart) {
+    cart.reload();
+    return;
+  }
+  cart = new ShoppingCart(
+    () => currentUser?.username || '',
+    (itemId, itemName) => {
+      // Fallback: se dispara cada vez que un ítem es eliminado del carrito
+      // Esto se tendra que usar para visualizar un contador de cuantos items de un tipo se agregaron/quitaron al carrito.
+      showSuccessMessage(`${itemName} eliminado del carrito`);
+      // window.dispatchEvent(new CustomEvent('cart-item-removed', { detail: { id: itemId, name: itemName } }));
+    },
+    () => currentUser !== null,
+    () => {
+      loadTableData(activeTableKey);
+    }
+  );
 }
 
 // -----------------------------------------------------------------------------
@@ -747,7 +757,7 @@ function renderAnyTable<K extends TableKey>(
 ): void {
   const thead = sharedTable.querySelector('thead')!;
   const tbody = sharedTable.querySelector('tbody')!;
-  const tableStructure = structure.tables[tableKey];
+  const tableStructure = structure.tables[tableKey] as TableStructure;
   const showActions = canWriteAcademic();
   const isStocksTable = tableKey === 'stocks';
 
@@ -781,7 +791,6 @@ function renderAnyTable<K extends TableKey>(
 
   // HTML del carrito (solo para stocks, visible para todos)
   if (isStocksTable) {
-    
     const cartHeader = document.createElement('th');
     cartHeader.textContent = getLocalizedText(structure.commonText.cartActions);
     headerRow.appendChild(cartHeader);
@@ -820,16 +829,14 @@ function renderAnyTable<K extends TableKey>(
     });
 
     // Celdas del carrito y quantity para stocks
-
     if (isStocksTable) {
-
       type StockWithTotal = TableRecordMap['stocks'] & {
         items_total_available: number; // O el tipo de dato que corresponda (ej. string si viene de un SUM de Postgres)
       };
 
       // el 'as unknown' es para que no se ponga la gorra el compilador (lo dice el warning si lo quitamos), porque estamos convirtiendo un tipo genérico en algo re específico
       // y asume que nos estamos equivocando 
-      const stockRecord = record as unknown as StockWithTotal ;
+      const stockRecord = record as unknown as StockWithTotal;
       const cartTd = document.createElement('td');
       const productId = String(stockRecord.cod_stock);
       const productName = String(stockRecord.name);
@@ -869,7 +876,7 @@ function renderAnyTable<K extends TableKey>(
         cart.addItem({ id: productId, name: productName });
         loadTableData(activeTableKey);
       });
-    
+
       controlDiv.appendChild(decBtn);
       controlDiv.appendChild(qtySpan);
       controlDiv.appendChild(incBtn);
@@ -877,6 +884,32 @@ function renderAnyTable<K extends TableKey>(
       availableQtyTd.appendChild(availableQtySpan);
       row.appendChild(cartTd);
       row.appendChild(availableQtyTd);
+    }
+
+    if (tableKey == "orders") {
+      const cancelTd = document.createElement('td');
+      cancelTd.className = 'actions';
+
+      if ((record as any).status === 'preparing') {
+        const pkValues = pkFields.map((field) =>
+          String(record[field as keyof TableRecordMap[K]] ?? '')
+        );
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'delete-btn';
+        cancelBtn.textContent = getLocalizedText(tableStructure.cancelButtonLabel || structure.commonText.cancel);
+        cancelBtn.dataset.pk = JSON.stringify(pkValues);
+        cancelBtn.addEventListener('click', (event) => {
+          const values = JSON.parse(
+            (event.currentTarget as HTMLElement).dataset.pk || '[]'
+          );
+          window.cancelOrder(tableKey, ...values);
+        });
+
+        cancelTd.appendChild(cancelBtn);
+      }
+
+      row.appendChild(cancelTd);
     }
 
     // Acciones de admin (editar/eliminar)
@@ -1753,11 +1786,10 @@ async function showAnyForm<K extends TableKey>(
   form.id = formId;
 
   const title = document.createElement('h3');
-  title.textContent = `${
-    isEdit
-      ? getLocalizedText(structure.commonText.edit)
-      : getLocalizedText(structure.commonText.add)
-  } ${getLocalizedText(tableConfig.uiName)}`;
+  title.textContent = `${isEdit
+    ? getLocalizedText(structure.commonText.edit)
+    : getLocalizedText(structure.commonText.add)
+    } ${getLocalizedText(tableConfig.uiName)}`;
   form.appendChild(title);
 
   fields.forEach((field) => form.appendChild(field));
@@ -1886,6 +1918,10 @@ declare global {
       tableKey: K,
       ...pkValues: string[]
     ) => Promise<void>;
+    cancelOrder: <K extends TableKey>(
+      tableKey: K,
+      ...pkValues: string[]
+    ) => Promise<void>;
   }
 }
 
@@ -1961,6 +1997,53 @@ window.deleteRecord = async <K extends TableKey>(
 
     if (!responseAnswer.success) {
       return showErrorMessage(responseAnswer.message ?? 'Error deleting record');
+    }
+
+    showSuccessMessage(responseAnswer.message ?? '');
+    loadTableData(tableKey);
+  } catch (error) {
+    const message = (error as Error).message;
+
+    if (message !== 'Authentication required' && message !== 'Forbidden') {
+      setMessage(getLocalizedText(structure.commonText.errorDeleting));
+      console.error(`Error deleting ${tableKey}:`, error);
+    }
+  }
+};
+
+window.cancelOrder = async <K extends TableKey>(
+  tableKey: K,
+  ...pkValues: string[]
+) => {
+  const tableConfig = structure.tables[tableKey];
+  const entityName = getLocalizedText(tableConfig.uiName).toLowerCase();
+
+  const confirmed = confirm(
+    `${getLocalizedText(structure.commonText.cancelConfirm)} ${entityName}?`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const queryParams = new URLSearchParams(
+      getPkFields(tableKey).map((pkFieldName, index) => [
+        pkFieldName,
+        pkValues[index] ?? '',
+      ])
+    ).toString();
+
+    const response = await apiFetch(`/${tableKey}?${queryParams}&cancel=true`, {
+      method: 'PUT',
+    });
+
+    if (!response.ok) {
+      return showErrorMessage(await errorMessage(response));
+    }
+
+    const responseAnswer: ApiResponse = await response.json();
+
+    if (!responseAnswer.success) {
+      return showErrorMessage(responseAnswer.message ?? 'Error cancelling order');
     }
 
     showSuccessMessage(responseAnswer.message ?? '');
@@ -2096,4 +2179,4 @@ async function initialize(): Promise<void> {
 
 initialize();
 
-export {};
+export { };
