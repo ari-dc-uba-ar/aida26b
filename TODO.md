@@ -12,7 +12,7 @@ maneja automaticamente que almacenes, transporte, e items asignar.
 ## Funcionalidades para los Choferes de transporte
 - Los choferes ven los pedidos que se les asignaron y las direcciones correspondientes.
 - Reciben la proxima direccion al que tienen que ir. Esto podria ser un endpoint especifico.
-- Tiene la opcion de marcar los pedidos como enviados o no se pudo entregar.
+- ~Tiene la opcion de marcar los pedidos como enviados o no se pudo entregar.~
 
 ## Stock y compras
 - Cuando se compra, internamente el sistema elige automaticamente los almacenes y el transporte
@@ -54,6 +54,7 @@ clients, pero quizás es over-engineering para nuestro sistema
 - El JOIN para ver la cantidad de items es bastante genérico, pero sólo funciona si en el structure del single source of truth
 la tabla de la que partimos NO tiene nada en su referencedRelations. Si hay un referencedRelations no nulo, ignora lo de contar
 la cantidad de referencias en otras tablas. Podría verse de hacer que puedan andar ambas a la vez.
+- las funciones de tipo window.fun() que se usan en app.ts para actualizar el estado de los pedidos son redundantes.
 
 ## Bugs
 

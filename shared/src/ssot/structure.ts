@@ -450,6 +450,14 @@ export const structure = {
       es: "Para marcar como entregada esta orden, debe ingresar el CUIT del cliente,",
       en: "To mark as delivered this order, you must provide the client's CUIT."
     },
+    notUpdatableField: {
+      es: "No editable",
+      en: "Not updatable"
+    },
+    incorrectClientCUIT: {
+      es: "El CUIT ingresado es incorrecto",
+      en: "The provided CUIT is inocrrect"
+    },
     // Auth / session messages
     sessionExpired: { es: 'La sesión expiró', en: 'Session expired' },
     passwordChangeRequired: { es: 'Hay que cambiar la contraseña', en: 'Password change required' },

@@ -897,38 +897,46 @@ function renderAnyTable<K extends TableKey>(
         String(record[field as keyof TableRecordMap[K]] ?? '')
       );
 
-      const deliverBtn = document.createElement('button');
-      deliverBtn.className = 'delivered-btn';
-      deliverBtn.textContent = getLocalizedText(structure.commonText.deliverOrder);
-      deliverBtn.dataset.pk = JSON.stringify(pkValues);
-      deliverBtn.addEventListener('click', (event) => {
-        
-        //LOGICA PARA PEDIRLE AL DRIVER QUE INGRESE EL CUIT DEL CLIENT
-        const values = JSON.parse(
-          (event.currentTarget as HTMLElement).dataset.pk || '[]'
-        );
+      // sólo le dejamos updatear los pedidos que están viajando
+      if (String((record as TableRecordMap["orders"]).status) == 'travelling') {
+        const deliverBtn = document.createElement('button');
+        deliverBtn.className = 'delivered-btn';
+        deliverBtn.textContent = getLocalizedText(structure.commonText.deliverOrder);
+        deliverBtn.dataset.pk = JSON.stringify(pkValues);
+        deliverBtn.addEventListener('click', (event) => {
 
-        window.deliverOrder(values);
+          //LOGICA PARA PEDIRLE AL DRIVER QUE INGRESE EL CUIT DEL CLIENT
+          const values = JSON.parse(
+            (event.currentTarget as HTMLElement).dataset.pk || '[]'
+          );
 
-      });
+          window.deliverOrder(values);
 
-      const couldntDeliverBtn = document.createElement('button');
-      couldntDeliverBtn.className = 'couldnt-deliver-btn';
-      couldntDeliverBtn.textContent = getLocalizedText(structure.commonText.couldntDeliverOrder);
-      couldntDeliverBtn.dataset.pk = JSON.stringify(pkValues);
-      couldntDeliverBtn.addEventListener('click', (event) => {
-        
-        // LOGICA PARA HACER UNA WINDOW DE CONFIRMACIÓN DE QUE NO SE PUDO ENTREGAR EL PEDIDO
-        const values = JSON.parse(
-          (event.currentTarget as HTMLElement).dataset.pk || '[]'
-        );
+        });
 
-        window.couldntDeliverOrder(values);
+        const couldntDeliverBtn = document.createElement('button');
+        couldntDeliverBtn.className = 'couldnt-deliver-btn';
+        couldntDeliverBtn.textContent = getLocalizedText(structure.commonText.couldntDeliverOrder);
+        couldntDeliverBtn.dataset.pk = JSON.stringify(pkValues);
+        couldntDeliverBtn.addEventListener('click', (event) => {
 
-      });
+          // LOGICA PARA HACER UNA WINDOW DE CONFIRMACIÓN DE QUE NO SE PUDO ENTREGAR EL PEDIDO
+          const values = JSON.parse(
+            (event.currentTarget as HTMLElement).dataset.pk || '[]'
+          );
 
-      driverActionsTd.appendChild(deliverBtn);
-      driverActionsTd.appendChild(couldntDeliverBtn);
+          window.couldntDeliverOrder(values);
+
+        });
+
+        driverActionsTd.appendChild(deliverBtn);
+        driverActionsTd.appendChild(couldntDeliverBtn);   
+      } else {
+        const placeholderSpan = document.createElement("span");
+        placeholderSpan.textContent = getLocalizedText(structure.commonText.notUpdatableField);
+        driverActionsTd.appendChild(placeholderSpan);
+      }
+
       row.appendChild(driverActionsTd);
     }
  
@@ -2147,7 +2155,9 @@ window.deliverOrder = async (
 
     // si está mal, a casita
     if (enteredCuit.trim() !== record.cuit_client) {
-      return showErrorMessage("El CUIT ingresado es incorrecto.");
+      return showErrorMessage(
+        `${getLocalizedText(structure.commonText.incorrectClientCUIT)}`
+      );
     }
 
     // marcamos como entregado
