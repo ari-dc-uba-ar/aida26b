@@ -12,6 +12,7 @@
 - Los choferes ven los pedidos que se les asignaron y las direcciones correspondientes.
 - Reciben la proxima direccion al que tienen que ir. Esto podria ser un endpoint especifico.
 - ~Tiene la opcion de marcar los pedidos como enviados o no se pudo entregar.~
+- Tienen la posibilidad de marcarse a sí mismos como viajando.
 
 ## Stock y compras
 - ~Cuando se compra, internamente el sistema elige automaticamente los almacenes y el transporte mas optimo para llevar el producto al cliente. Haria falta un endpoint para realizar al compra y procesar el pedido.~
@@ -54,6 +55,9 @@ la cantidad de referencias en otras tablas. Podría verse de hacer que puedan an
 - ~El modal del carrito está siempre en tono claro~
 - ~Tras comprar items y volver a la view de stocks, no se actualiza inmediatamente la columna de Total Available (habría que hacer que se vuelva a llamar al endpoint de la API para el GET de la misma)~
 - ~Si nos loggeamos como un usuario A (ej admin) y metemos cosas al carrito, nos desloggeamos, loggeamos como un usuario B (ej un client), el B tiene en su carrito lo que puso el A~
+- En clients, si tengo algunas ordenes preparing y otras que no, se ve medio fea la UI.
+- En orders se ve fea en general la UI para los drivers
+- En la tabla de orders el status de la misma aparece hardcoadeado con su value `deliver | travelling | failed | cancelled` y no con el label corrspondiente
 
 ## "INFORME"
 
