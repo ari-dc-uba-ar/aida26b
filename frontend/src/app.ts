@@ -904,6 +904,11 @@ function renderAnyTable<K extends TableKey>(
       deliverBtn.addEventListener('click', (event) => {
         
         //LOGICA PARA PEDIRLE AL DRIVER QUE INGRESE EL CUIT DEL CLIENT
+        const values = JSON.parse(
+          (event.currentTarget as HTMLElement).dataset.pk || '[]'
+        );
+
+        window.deliverOrder(values);
 
       });
 
@@ -914,6 +919,11 @@ function renderAnyTable<K extends TableKey>(
       couldntDeliverBtn.addEventListener('click', (event) => {
         
         // LOGICA PARA HACER UNA WINDOW DE CONFIRMACIÓN DE QUE NO SE PUDO ENTREGAR EL PEDIDO
+        const values = JSON.parse(
+          (event.currentTarget as HTMLElement).dataset.pk || '[]'
+        );
+
+        window.couldntDeliverOrder(values);
 
       });
 
@@ -1929,6 +1939,12 @@ declare global {
       tableKey: K,
       ...pkValues: string[]
     ) => Promise<void>;
+    couldntDeliverOrder: (
+      pkValues: string[]
+    ) => Promise<void>;
+    deliverOrder: (
+      pkValues: string[]
+    ) => Promise<void>;
   }
 }
 
@@ -2018,6 +2034,156 @@ window.deleteRecord = async <K extends TableKey>(
   }
 };
 
+// las pk de la order, en nuestro caso va a ser sólo el UUID
+window.couldntDeliverOrder = async (
+  pkValues: string[]
+) => {
+ 
+  const tableKey = "orders";
+
+  const confirmed = confirm(
+    `${getLocalizedText(structure.commonText.markAsCouldntDeliverOrder)}`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const queryParams = new URLSearchParams(
+      getPkFields(tableKey).map((pkFieldName, index) => [
+        pkFieldName,
+        pkValues[index] ?? "",
+      ])
+    ).toString();
+
+    const response = await apiFetch(`/${tableKey}?${queryParams}`);
+
+    if (!response.ok) {
+      return showErrorMessage(await errorMessage(response));
+    }
+
+    const responseAnswer: ApiResponse = await response.json();
+
+    if (!responseAnswer.success) {
+      return showErrorMessage(
+        responseAnswer.message ?? "Error loading order"
+      );
+    }
+
+    const record = responseAnswer.data as TableRecordMap["orders"];
+
+    // modificar únicamente el estado
+    record.status = "failed";
+
+    // PUT
+    const updateResponse = await apiFetch(`/${tableKey}?${queryParams}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(record),
+    });
+
+    if (!updateResponse.ok) {
+      return showErrorMessage(await errorMessage(updateResponse));
+    }
+
+    const updateAnswer: ApiResponse = await updateResponse.json();
+
+    if (!updateAnswer.success) {
+      return showErrorMessage(
+        updateAnswer.message ?? "Error updating order"
+      );
+    }
+
+    showSuccessMessage(responseAnswer.message ?? '');
+    loadTableData(tableKey);
+  } catch (error) {
+    const message = (error as Error).message;
+
+    if (message !== "Authentication required" && message !== "Forbidden") {
+      setMessage(getLocalizedText(structure.commonText.errorSaving));
+      console.error("Error updating order:", error);
+    }
+  }
+};
+
+// muy similar a la anterior, sólo que debemos  pedir el CUIT
+window.deliverOrder = async (
+  pkValues: string[]
+) => {
+  
+  const tableKey = "orders";
+
+  try {
+    const queryParams = new URLSearchParams(
+      getPkFields(tableKey).map((pkFieldName, index) => [
+        pkFieldName,
+        pkValues[index] ?? "",
+      ])
+    ).toString();
+
+    const response = await apiFetch(`/${tableKey}?${queryParams}`);
+
+    if (!response.ok) {
+      return showErrorMessage(await errorMessage(response));
+    }
+
+    const responseAnswer: ApiResponse = await response.json();
+
+    if (!responseAnswer.success) {
+      return showErrorMessage(
+        responseAnswer.message ?? "Error loading order"
+      );
+    }
+
+    const record = responseAnswer.data as TableRecordMap["orders"];
+
+    // pedimos CUIT
+    const enteredCuit = prompt(
+      `${getLocalizedText(structure.commonText.askForClientCUIT)}`
+    );
+
+    if (enteredCuit === null) return;
+
+    // si está mal, a casita
+    if (enteredCuit.trim() !== record.cuit_client) {
+      return showErrorMessage("El CUIT ingresado es incorrecto.");
+    }
+
+    // marcamos como entregado
+    record.status = "delivered";
+
+    const updateResponse = await apiFetch(`/${tableKey}?${queryParams}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(record),
+    });
+
+    if (!updateResponse.ok) {
+      return showErrorMessage(await errorMessage(updateResponse));
+    }
+
+    const updateAnswer: ApiResponse = await updateResponse.json();
+
+    if (!updateAnswer.success) {
+      return showErrorMessage(
+        updateAnswer.message ?? "Error updating order"
+      );
+    }
+
+    showSuccessMessage(responseAnswer.message ?? '');
+    loadTableData(tableKey);
+  } catch (error) {
+    const message = (error as Error).message;
+
+    if (message !== "Authentication required" && message !== "Forbidden") {
+      setMessage(getLocalizedText(structure.commonText.errorSaving));
+      console.error("Error delivering order:", error);
+    }
+  }
+};
 // -----------------------------------------------------------------------------
 // Initialization
 // -----------------------------------------------------------------------------

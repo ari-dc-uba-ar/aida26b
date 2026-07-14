@@ -442,7 +442,14 @@ export const structure = {
     driverActions: {es: "Actualizar Estado", en: "Update Status"},
     deliverOrder: {es: "Entregado", en: "Delivered"},
     couldntDeliverOrder: {es: "No se pudo entregar", en: "Couldn't Deliver"},
-
+    markAsCouldntDeliverOrder: {
+      es: "¿Está seguro que quier marcar como no entregada a este pedido?",
+      en: "Are you sure you want to mark as not delivered this order?"
+    },
+    askForClientCUIT: {
+      es: "Para marcar como entregada esta orden, debe ingresar el CUIT del cliente,",
+      en: "To mark as delivered this order, you must provide the client's CUIT."
+    },
     // Auth / session messages
     sessionExpired: { es: 'La sesión expiró', en: 'Session expired' },
     passwordChangeRequired: { es: 'Hay que cambiar la contraseña', en: 'Password change required' },
