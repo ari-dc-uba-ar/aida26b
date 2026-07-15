@@ -65,6 +65,16 @@ la cantidad de referencias en otras tablas. Podría verse de hacer que puedan an
 - En la tabla de orders el status de la misma aparece hardcoadeado con su value `deliver | travelling | failed | cancelled` y no con el label corrspondiente
 - Al cambiar el lenguaje de la aplicación, el botón de drivers fallbackea al texto default (VER `applyStaticLanguageToUI()`) 
 
+## Edgecases a considerar (¿Qué hacemos en estos casos?)
+
+- ¿Dejamos que los admins puedan marcar como travelling/ready a los camiones?
+- Si alguien cancela un pedido o se marca como no entregado (**son dos estados distintos**), ¿Qué hacemos con los items asociados al mismo? ¿Le volvemos NULL so foreign key de pedidos? (OJO, eso hace que no nos podamos preguntar, por ejemplo, ¿Qué cosas tenían los pedidos que fueron cancelados o no se pudieron entregar? porque esos items ya no estarían asociados a los mismos)
+- ¿Hacemos que los drivers tengan mail de usuario? (ahora mismo se hardcodea algo para meterlo en su entrada en `auth.users`, pero es medio MUY tosco)
+- ¿Permitimos que se **eliminen** pedidos? O sea, no marcar como cancelado o no entregado, **borrarlos del mapa** (implica perder data si alguien quisiera luego hacer algo de análisis sobre las ventas del sistemita).
+- ¿Qué pasa si un camión se marca como `broken`? ¿Se rompió viajando o en el almacén? ¿Quién lo marca así (admins o button para que ellos mismos lo hagan)? ¿Qué pasa con los estados de sus pedidos?
+
+
+
 ## "INFORME"
 
 Hay que hacer un markdown con:
