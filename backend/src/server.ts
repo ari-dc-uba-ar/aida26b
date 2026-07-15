@@ -15,6 +15,7 @@ import { deleteHandler } from './routes/delete';
 import { checkoutHandler } from './routes/cart';
 import { FormDataMap, TableKey, TableRecordMap } from '../../shared/src/types/types';
 import { formatTableColumnsForQuery } from './helpers';
+import { sendErrorMessage } from './status_messages';
 
 // Load environment variables before reading process.env
 dotenv.config();
@@ -173,7 +174,7 @@ const requireAcademicWrite: RequestHandler = async (req, res, next) => {
   if (
     role === 'driver' &&
     req.method === 'PUT' &&
-    (tableName === 'orders' || tableName == 'transports')
+    (tableName === 'orders')
   ) {
     return next();
   }
@@ -593,6 +594,117 @@ app.post(
   async (req: AuthedRequest, res) => checkoutHandler(req, res)
 );
 
+async function updateDriverStatusHandler(
+  req: express.Request,
+  res: express.Response,
+  pool: Pool | PoolClient
+) {
+
+  const { license_plate, availability } = req.body;
+
+  if (!license_plate || !availability) {
+    return res.status(400).json({
+      success: false,
+      message: "license_plate and availability are required",
+    });
+  }
+
+  try {
+    await pool.query("BEGIN");
+
+    // lock del transport
+    const transportResult = await pool.query(
+      `
+        SELECT *
+        FROM transports
+        WHERE license_plate = $1
+        FOR UPDATE
+        `,
+      [license_plate]
+    );
+
+    if (transportResult.rowCount === 0) {
+      await pool.query("ROLLBACK");
+
+      return res.status(404).json({
+        success: false,
+        message: "Transport not found",
+      });
+    }
+
+    const previousStatus = transportResult.rows[0].availability;
+
+    // actualizar transport
+    const updatedTransport = await pool.query(
+      `
+        UPDATE transports
+        SET availability = $1
+        WHERE license_plate = $2
+        RETURNING *
+        `,
+      [availability, license_plate]
+    );
+
+    // ready a travelling
+    if (
+      previousStatus === "ready" &&
+      availability === "travelling"
+    ) {
+      // actualizamos sus pedidos
+      await pool.query(
+        `
+          UPDATE orders
+          SET status = 'travelling'
+          WHERE
+            plate_transport = $1
+            AND status = 'preparing'
+          `,
+        [license_plate]
+      );
+    }
+
+    // travelling a ready
+    if (
+      previousStatus === "travelling" &&
+      availability === "ready"
+    ) {
+      // no se pudieron entregar algunas orders
+      await pool.query(
+        `
+          UPDATE orders
+          SET status = 'failed'
+          WHERE
+            plate_transport = $1
+            AND status = 'travelling'
+          `,
+        [license_plate]
+      );
+    }
+
+    await pool.query("COMMIT");
+
+    return res.status(202).json({
+      success: true,
+      data: updatedTransport.rows[0],
+      message: "Driver status updated",
+    });
+
+  } catch (error) {
+    await pool.query("ROLLBACK");
+
+    return sendErrorMessage(res, (error as Error).message);
+  }
+}
+
+app.post(
+  "/api/transports/updateStatus",
+  requireAuth,
+  requirePasswordReady,
+  attachDbSession,
+  async (req: AuthedRequest, res) => {
+    return updateDriverStatusHandler(req, res, req.dbClient ?? pool);
+  }
+);
 // Generic academic API routes
 app.get(
   '/api/:tableName',

@@ -786,13 +786,16 @@ async function updateDriverStatus(transport: TableRecordMap["transports"], nextS
 
     // persistimos
     const updateResponse = await apiFetch(
-      `/transports?license_plate=${encodeURIComponent(driverLicensePlate)}`,
+      "/transports/updateStatus",
       {
-        method: "PUT",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(transport),
+        body: JSON.stringify({
+          license_plate: transport.license_plate,
+          availability: nextStatus,
+        }),
       }
     );
 
