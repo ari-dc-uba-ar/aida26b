@@ -9,10 +9,12 @@
 - ~Ver la lista de pedidos del cliente. (implementado vía RLS)~
 
 ## Funcionalidades para los Choferes de transporte
-- Los choferes ven los pedidos que se les asignaron y las direcciones correspondientes.
+- ~Los choferes ven los pedidos que se les asignaron~ y las direcciones correspondientes.
 - Reciben la proxima direccion al que tienen que ir. Esto podria ser un endpoint especifico.
 - ~Tiene la opcion de marcar los pedidos como enviados o no se pudo entregar.~
-- Tienen la posibilidad de marcarse a sí mismos como viajando.
+- ~Tienen la posibilidad de marcarse a sí mismos como viajando.~
+- Cuando se marcan como `travelling`, todos sus pedidos en `ready` deben pasar a estado `travelling`.
+- Cuando se marcan como `ready` (tras estar viajando), todos sus pedidos `travelling` deben pasar a estado `failed` (no se pudo entregar).
 
 ## Stock y compras
 - ~Cuando se compra, internamente el sistema elige automaticamente los almacenes y el transporte mas optimo para llevar el producto al cliente. Haria falta un endpoint para realizar al compra y procesar el pedido.~
