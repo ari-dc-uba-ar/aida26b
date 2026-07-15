@@ -13,14 +13,14 @@
 - Reciben la proxima direccion al que tienen que ir. Esto podria ser un endpoint especifico.
 - ~Tiene la opcion de marcar los pedidos como enviados o no se pudo entregar.~
 - ~Tienen la posibilidad de marcarse a sí mismos como viajando.~
-- Cuando se marcan como `travelling`, todos sus pedidos en `ready` deben pasar a estado `travelling`.
-- Cuando se marcan como `ready` (tras estar viajando), todos sus pedidos `travelling` deben pasar a estado `failed` (no se pudo entregar).
+- ~Cuando se marcan como `travelling`, todos sus pedidos en `ready` deben pasar a estado `travelling`.~
+- ~Cuando se marcan como `ready` (tras estar viajando), todos sus pedidos `travelling` deben pasar a estado `failed` (no se pudo entregar).~
 
 ## Stock y compras
 - ~Cuando se compra, internamente el sistema elige automaticamente los almacenes y el transporte mas optimo para llevar el producto al cliente. Haria falta un endpoint para realizar al compra y procesar el pedido.~
 - ~Calcular cuanto de un stock hay disponible para el cliente. Esto podria involucrar un JOIN generico o especifico por tabla.~ 
 - ~Cuando se logra elegir el item para el pedido, se marca como "preparando" en los pedidos.~
-- Una vez se marca el transporte como "Viajando", se marcan todos los pedidos asociados a ese transporte como "Viajando" tambien.
+- ~Una vez se marca el transporte como "Viajando", se marcan todos los pedidos asociados a ese transporte como "Viajando" tambien.~
 
 ## Roles y autentication
 - ~Visibilidad por tablas según cliente y chofer~
@@ -52,6 +52,7 @@ la tabla de la que partimos NO tiene nada en su referencedRelations. Si hay un r
 la cantidad de referencias en otras tablas. Podría verse de hacer que puedan andar ambas a la vez.
 - las funciones de tipo window.fun() que se usan en app.ts para actualizar el estado de los pedidos son mega redundantes.
 - toda la lógica de actualización de estado de los drivers habría que llevarla a un endpoint específico sobre el que ellos puedan hacer POST, ahora mismo, a mano, hacen un PUT a la API genérica de transports (no deberían, eso en principio permite modificar a otros drivers también)
+- En muchos lugares se hardcodea el status de los drivers y las órdenes con el string pelado, convendría encapsular eso en una variable o tipo particular para, si decimos agregar estados o algo, no tener que hacer validaciones por doquier (o no comernos la cabeza debuggeando si escribimos mal un string)
 
 
 ## Bugs
