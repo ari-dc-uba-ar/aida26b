@@ -173,7 +173,7 @@ const requireAcademicWrite: RequestHandler = async (req, res, next) => {
   if (
     role === 'driver' &&
     req.method === 'PUT' &&
-    tableName === 'orders'
+    (tableName === 'orders' || tableName == 'transports')
   ) {
     return next();
   }

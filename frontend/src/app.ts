@@ -29,6 +29,8 @@ type AuthUser = {
   role: Role;
   is_active: boolean;
   must_change_password: boolean;
+  client_cuit?: string | null;
+  transport_license?: string | null;
 };
 
 var cart: ShoppingCart;
@@ -94,6 +96,7 @@ const menuKeys = Object.keys(structure.menu) as Array<keyof typeof structure.men
 const tableNavButtons = {} as Record<TableKey, HTMLButtonElement>;
 
 const openCartBtn = document.getElementById('cart-btn') as HTMLButtonElement;
+const changeDriverStatusBtn = document.getElementById("change-driver-status-btn") as HTMLButtonElement;
 
 // -----------------------------------------------------------------------------
 // Auth/session state
@@ -144,6 +147,7 @@ function showApp(user: AuthUser): void {
   syncUrlToState();
   applyLanguageToUI();
   initializeCart();
+  updateDriverStatusBtn();
 
   authSection.style.display = 'none';
   passwordSection.style.display = 'none';
@@ -528,6 +532,7 @@ function applyStaticLanguageToUI(): void {
   setLocalizedElementText('new-password-label', structure.commonText.newPassword);
   setLocalizedElementText('password-submit-btn', structure.commonText.update);
   setLocalizedElementText('logout-btn', structure.commonText.logout);
+  setLocalizedElementText('change-driver-status-btn', structure.commonText.driverActions);
 }
 
 function updateNavButtonsText(): void {
@@ -729,6 +734,129 @@ function initializeCart(): void {
       loadTableData(activeTableKey);
     }
   );
+}
+
+function getDriverLicensePlate(): string {
+
+  if (currentUser!.transport_license == null || currentUser!.transport_license == '') {
+    throw new Error("You are not logged in as a driver");
+  }
+
+  return currentUser!.transport_license;
+
+}
+
+async function getTransport(licensePlate: string): Promise<TableRecordMap["transports"]> {
+
+  const response = await apiFetch(
+    `/transports?license_plate=${encodeURIComponent(licensePlate)}`
+  );
+
+  if (!response.ok) {
+    throw new Error(await errorMessage(response))
+  }
+
+  const responseAnswer: ApiResponse = await response.json();
+
+  if (!responseAnswer.success) {
+    throw new Error(await errorMessage(response))
+  }
+
+  const transport = responseAnswer.data as TableRecordMap["transports"];
+  
+  return transport;
+  
+}
+
+function getDriverStatusBtnText(driverStatus: string): string {
+  return driverStatus === "ready"
+      ? `${getLocalizedText(structure.commonText.startTravelling)}`
+      : `${getLocalizedText(structure.commonText.stopTravelling)}`;
+}
+
+// persiste el cambio de status a la DB
+async function updateDriverStatus(transport: TableRecordMap["transports"], nextStatus: string): Promise<void> {
+
+  const driverLicensePlate = transport.license_plate;
+
+  try {
+
+    // le cambiamos el status
+    transport.availability = nextStatus;
+
+    // persistimos
+    const updateResponse = await apiFetch(
+      `/transports?license_plate=${encodeURIComponent(driverLicensePlate)}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(transport),
+      }
+    );
+
+    if (!updateResponse.ok) {
+      return showErrorMessage(await errorMessage(updateResponse));
+    }
+
+    const updateAnswer: ApiResponse = await updateResponse.json();
+
+    if (!updateAnswer.success) {
+      return showErrorMessage(
+        updateAnswer.message ?? "Error updating driver status"
+      );
+    }
+
+    showSuccessMessage("Status updated");
+
+  } catch (error) {
+    const message = (error as Error).message;
+
+    if (message !== "Authentication required" && message !== "Forbidden") {
+      console.error("Error updating driver status:", error);
+      showErrorMessage("Error updating driver status.");
+    }
+  }
+
+}
+
+// se trae al driver actual y cambia el texto del botón ese y lo que hace
+async function updateDriverStatusBtn(): Promise<void> {
+  
+  console.log(`You are logged in as  ${currentUser!.role}`)
+
+  // si no es un driver, ni mostramos el botón
+  if (currentUser?.role !== "driver") {
+    changeDriverStatusBtn.style.display = "none";
+    return;
+  } else {
+    changeDriverStatusBtn.style.display = ""; // si antes estaba oculto, lo desocultamos
+  }
+
+
+  let licensePlate = '';
+
+  try {
+   licensePlate = getDriverLicensePlate();
+  } catch (error) {
+    showErrorMessage((error as Error).message);
+  }
+  
+  let transport: null | TableRecordMap["transports"] = null;
+
+  try {
+    transport = await getTransport(licensePlate);
+  } catch (error) {
+    showErrorMessage((error as Error).message)
+    return;
+  }
+
+  const driverStatus = transport!.availability;
+
+  changeDriverStatusBtn.textContent = getDriverStatusBtnText(driverStatus);
+
+  
 }
 
 // -----------------------------------------------------------------------------
@@ -2375,6 +2503,37 @@ logoutBtn.addEventListener('click', async () => {
 openCartBtn.addEventListener('click', async () => {
   cart.goCartPage();
 });
+
+changeDriverStatusBtn.addEventListener('click', async () => {
+  
+  // conseguimos la license plate
+  const licensePlate = getDriverLicensePlate();
+
+  if (licensePlate == null) {
+    return;
+  }
+
+  // busca al driver
+  const transport = await getTransport(licensePlate);
+  
+  // veoms el sig status
+  const nextStatus =
+    transport.availability === "ready"
+      ? "travelling"
+      : "ready";
+
+  // updateamos
+  await updateDriverStatus(transport, nextStatus);
+
+  // si hay una tabla cargada, la recarga
+  if (activeTableKey) {
+      loadTableData(activeTableKey);
+  }
+
+  // actualiza el btn
+  updateDriverStatusBtn();
+
+})
 
 async function initialize(): Promise<void> {
 

@@ -460,6 +460,14 @@ export const structure = {
       es: "El CUIT ingresado es incorrecto",
       en: "The provided CUIT is inocrrect"
     },
+    startTravelling: {
+      es: "Comenzar a repartir",
+      en: "Start to deliver",
+    },
+    stopTravelling: {
+      es: "Dejar de repartir",
+      en: "Stop delivering",
+    },
     // Auth / session messages
     sessionExpired: { es: 'La sesión expiró', en: 'Session expired' },
     passwordChangeRequired: { es: 'Hay que cambiar la contraseña', en: 'Password change required' },
