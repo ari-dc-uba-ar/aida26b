@@ -51,6 +51,8 @@ clients, pero quizás es over-engineering para nuestro sistema
 la tabla de la que partimos NO tiene nada en su referencedRelations. Si hay un referencedRelations no nulo, ignora lo de contar
 la cantidad de referencias en otras tablas. Podría verse de hacer que puedan andar ambas a la vez.
 - las funciones de tipo window.fun() que se usan en app.ts para actualizar el estado de los pedidos son mega redundantes.
+- toda la lógica de actualización de estado de los drivers habría que llevarla a un endpoint específico sobre el que ellos puedan hacer POST, ahora mismo, a mano, hacen un PUT a la API genérica de transports (no deberían, eso en principio permite modificar a otros drivers también)
+
 
 ## Bugs
 
