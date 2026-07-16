@@ -42,7 +42,7 @@
 
 ## Refactorizacion?
 - Habra que quitar los condicionales que miran isStocksTable dentro de renderAnyTable, ya que rompe con la generalizacion. Seria buena idea separarlo, luego ver si generalizar.
-- En frontend/src/app.ts, tenemos en renderAnyTable la creacion de botones. La estructura de crear los botones son muy similares. Se podria hacer un pre-createButton donde se puede incluir el JSON.stringify(pkValues) que usan las acciones por record, el addEventListener para el click, y tambien un post-createButton donde podria incluirse la forma en que se hace el append a la tabla.
+- ~En frontend/src/app.ts, tenemos en renderAnyTable la creacion de botones. La estructura de crear los botones son muy similares. Se podria hacer un pre-createButton donde se puede incluir el JSON.stringify(pkValues) que usan las acciones por record, el addEventListener para el click, y tambien un post-createButton donde podria incluirse la forma en que se hace el append a la tabla.~
 - ~Quitar código repetido de la creación de usuarios (chofer/cliente): seguramente hay que ver cómo se crean queries genéricas (en el back ya habían funciones útiles para eso).~
 - Los tipos de FormData de types.ts podrían inferirse a partir del struct de single source of truth (por ejemplo, agregando algún campo para decidir si un campo va en el form de creación y añadiendo con un "&" password, username y roles)
 - Podríamos generalizar un poco más la tabla de auth.users, ahora mismo queda NULL o bien el campo para la placa del coche o el de
@@ -54,6 +54,7 @@ la cantidad de referencias en otras tablas. Podría verse de hacer que puedan an
 - Muchas de las funciones de tipo window.fun() nuestra usan funciones que están ahí tiradas en el app.ts, habría que llevarlas a algún dir específico.
 - ~toda la lógica de actualización de estado de los drivers habría que llevarla a un endpoint específico sobre el que ellos puedan hacer POST, ahora mismo, a mano, hacen un PUT a la API genérica de transports (no deberían, eso en principio permite modificar a otros drivers también)~
 - ~En muchos lugares se hardcodea el status de los drivers y las órdenes con el string pelado, convendría encapsular eso en una variable o tipo particular para, si decimos agregar estados o algo, no tener que hacer validaciones por doquier (o no comernos la cabeza debuggeando si escribimos mal un string)~
+- en renderAnyForm se podría también extraer la generación de headers dinámicos (o sea, para los buttons particulares, esos ifs hardcodeados)
 
 
 ## Bugs
