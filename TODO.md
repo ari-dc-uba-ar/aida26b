@@ -54,7 +54,7 @@ la cantidad de referencias en otras tablas. Podría verse de hacer que puedan an
 - Muchas de las funciones de tipo window.fun() nuestra usan funciones que están ahí tiradas en el app.ts, habría que llevarlas a algún dir específico.
 - ~toda la lógica de actualización de estado de los drivers habría que llevarla a un endpoint específico sobre el que ellos puedan hacer POST, ahora mismo, a mano, hacen un PUT a la API genérica de transports (no deberían, eso en principio permite modificar a otros drivers también)~
 - ~En muchos lugares se hardcodea el status de los drivers y las órdenes con el string pelado, convendría encapsular eso en una variable o tipo particular para, si decimos agregar estados o algo, no tener que hacer validaciones por doquier (o no comernos la cabeza debuggeando si escribimos mal un string)~
-- en renderAnyForm se podría también extraer la generación de headers dinámicos (o sea, para los buttons particulares, esos ifs hardcodeados)
+- en renderAnyForm se podría también extraer la generación de headers dinámicos (o sea, para los buttons particulares, esos ifs hardcodeados), también se podría llevar todas esas funciones a otro dir
 
 
 ## Bugs
