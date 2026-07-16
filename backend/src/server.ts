@@ -16,6 +16,7 @@ import { checkoutHandler } from './routes/cart';
 import { FormDataMap, TableKey, TableRecordMap } from '../../shared/src/types/types';
 import { formatTableColumnsForQuery } from './helpers';
 import { sendErrorMessage } from './status_messages';
+import { DriverStatus, OrderStatus } from '../../shared/src/ssot/structure';
 
 // Load environment variables before reading process.env
 dotenv.config();
@@ -647,8 +648,8 @@ async function updateDriverStatusHandler(
 
     // ready a travelling
     if (
-      previousStatus === "ready" &&
-      availability === "travelling"
+      previousStatus === DriverStatus.READY &&
+      availability === DriverStatus.TRAVELLING
     ) {
       // actualizamos sus pedidos
       await pool.query(
@@ -665,8 +666,8 @@ async function updateDriverStatusHandler(
 
     // travelling a ready
     if (
-      previousStatus === "travelling" &&
-      availability === "ready"
+      previousStatus === DriverStatus.TRAVELLING &&
+      availability === DriverStatus.READY
     ) {
       // no se pudieron entregar algunas orders
       await pool.query(
