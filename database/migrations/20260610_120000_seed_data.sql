@@ -24,11 +24,11 @@ INSERT INTO warehouses VALUES
 -- ==========================
 
 INSERT INTO transports VALUES
-('AA123BB', 'Av. Corrientes 1000', 'AVAILABLE'),
-('AB456CD', 'Av. Corrientes 1000', 'IN_TRANSIT'),
-('AC789EF', 'Ruta 8 Km 45', 'AVAILABLE'),
+('AA123BB', 'Av. Corrientes 1000', 'ready'),
+('AB456CD', 'Av. Corrientes 1000', 'travelling'),
+('AC789EF', 'Ruta 8 Km 45', 'ready'),
 ('AD111GH', 'Ruta 8 Km 45', 'MAINTENANCE'),
-('AE222IJ', 'Parque Industrial Sur', 'AVAILABLE');
+('AE222IJ', 'Parque Industrial Sur', 'ready');
 
 -- ==========================
 -- STOCK TYPES
@@ -59,11 +59,11 @@ INSERT INTO clients VALUES
 -- ==========================
 
 INSERT INTO orders VALUES
-('ORD001', '2026-06-10', '20-11111111-1', 'AB456CD', 'DELIVERED'),
-('ORD002', '2026-06-12', '20-22222222-2', 'AC789EF', 'IN_TRANSIT'),
-('ORD003', '2026-06-15', '20-33333333-3', 'AE222IJ', 'PREPARING'),
-('ORD004', '2026-06-18', '20-44444444-4', 'AA123BB', 'DELIVERED'),
-('ORD005', '2026-06-20', '20-55555555-5', 'AC789EF', 'PENDING');
+('ORD001', '2026-06-10', '20-11111111-1', 'AB456CD', 'delivered'),
+('ORD002', '2026-06-12', '20-22222222-2', 'AC789EF', 'travelling'),
+('ORD003', '2026-06-15', '20-33333333-3', 'AE222IJ', 'preparing'),
+('ORD004', '2026-06-18', '20-44444444-4', 'AA123BB', 'delivered'),
+('ORD005', '2026-06-20', '20-55555555-5', 'AC789EF', 'travelling');
 
 -- ==========================
 -- ITEMS
