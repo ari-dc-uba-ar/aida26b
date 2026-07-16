@@ -3,6 +3,7 @@ import type { Request, RequestHandler } from 'express';
 import cors from 'cors';
 import { Pool, QueryResult, type PoolClient } from 'pg';
 import dotenv from 'dotenv';
+import { structure } from '../../shared/src/ssot/structure';
 import path from 'path';
 import fs from 'fs';
 
@@ -180,6 +181,43 @@ const requireAcademicWrite: RequestHandler = async (req, res, next) => {
     req.method === 'PUT' &&
     (tableName === 'orders')
   ) {
+    return next();
+  }
+
+  await audit(req, 'permission_denied', 'denied', {
+    path: req.path,
+    method: req.method,
+  });
+
+  return res.status(403).json({ error: 'Forbidden' });
+};
+
+const requireAcademicRead: RequestHandler = async (req, res, next) => {
+  const user = (req as AuthedRequest).user;
+  const role = user?.role;
+  // Si la ruta es específica (ej. /api/orders), req.params.tableName es undefined y se obtiene del path
+  const tableName = req.params.tableName || (req.path.startsWith('/api/') ? req.path.split('/')[2] : undefined);
+
+  if (!tableName || !structure.tables[tableName as TableKey]) {
+    return next();
+  }
+
+  // Si un chofer quiere leer transportes, solo permitimos si filtra por su propia patente
+  if (role === 'driver' && tableName === 'transports') {
+    if (user?.transport_license && req.query.license_plate === user.transport_license) {
+      return next();
+    }
+    await audit(req, 'permission_denied', 'denied', {
+      path: req.path,
+      method: req.method,
+    });
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const tableStructure = structure.tables[tableName as TableKey];
+  const allowedRoles = tableStructure.permissions?.read || [];
+
+  if (role && (allowedRoles as string[]).includes(role)) {
     return next();
   }
 
@@ -626,6 +664,7 @@ app.get(
   requireAuth,
   requirePasswordReady,
   attachDbSession,
+  requireAcademicRead,
   async (req: AuthedRequest, res) => {
     return getHandler(req, res, req.dbClient ?? pool);
   }

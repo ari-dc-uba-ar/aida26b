@@ -27,7 +27,9 @@ import {
 export async function putHandler(
   req: express.Request,
   res: express.Response,
-  pool: Pool | PoolClient
+  pool: Pool | PoolClient,
+  // Permite persistir campos no editables directamente por el usuario (ej: delivered_at_time) pero calculados por el backend
+  programmaticUpdates?: Record<string, any>
 ) {
   const tableNameParam = req.params.tableName;
 
@@ -42,6 +44,10 @@ export async function putHandler(
 
   if (sendErrorsIfInvalid(res, validatedBody)) {
     return;
+  }
+
+  if (validatedBody.data && programmaticUpdates) {
+    Object.assign(validatedBody.data, programmaticUpdates);
   }
 
   const validatedPk = validateOnlyPk(tableName, req.query);

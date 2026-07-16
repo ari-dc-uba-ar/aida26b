@@ -133,7 +133,7 @@ export const structure = {
       addButtonLabel: { es: 'Añadir Transporte', en: 'Add Transport' },
       referencedTables: ['warehouses'],
       permissions: {
-        read: ["admin"],
+        read: ["admin", "driver"],
         create: ["admin"],
         update: ["admin"],
         delete: ["admin"],

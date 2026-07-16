@@ -219,12 +219,13 @@ export async function updateOrderHandler(
   pool: Pool | PoolClient
 ) {
   req.params.tableName = 'orders';
+  const programmaticUpdates: Record<string, any> = {};
   if (req.body) {
     if (req.body.status === OrderStatus.DELIVERED) {
-      req.body.delivered_at_time = new Date().toISOString();
+      programmaticUpdates.delivered_at_time = new Date().toISOString();
     } else if (req.body.status) {
-      req.body.delivered_at_time = null;
+      programmaticUpdates.delivered_at_time = null;
     }
   }
-  return putHandler(req, res, pool);
+  return putHandler(req, res, pool, programmaticUpdates);
 }

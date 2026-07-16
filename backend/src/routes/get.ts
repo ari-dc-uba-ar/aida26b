@@ -44,12 +44,13 @@ export async function getHandler(
   const tableName = tableNameParam as TableKey;
   const entityName = getEntityName(tableName);
   const dbClient = pool as Pool | PoolClient;
+  const role = (req as any).user?.role || 'reader';
 
   if (isListRequest(req.query)) {
-    return getListOfTable(dbClient, res, tableName, req.query);
+    return getListOfTable(dbClient, res, tableName, req.query, role);
   }
 
-  return getRowOfTable(dbClient, res, tableName, req.query, entityName);
+  return getRowOfTable(dbClient, res, tableName, req.query, entityName, role);
 }
 
 /** Query builder used by list/table views. */
@@ -392,7 +393,8 @@ async function getListOfTable(
   pool: Pool | PoolClient,
   res: express.Response,
   tableName: TableKey,
-  query: express.Request["query"]
+  query: express.Request["query"],
+  role: string
 ) {
   try {
     const defaultSort = getPkFields(tableName);
@@ -409,8 +411,10 @@ async function getListOfTable(
       pool.query(countQuery, countValues),
     ]);
 
+    const filteredRows = dataResult.rows.map(row => filterRowByRole(tableName, role, row));
+
     return res.json({
-      data: dataResult.rows,
+      data: filteredRows,
       total: parseInt(countResult.rows[0].count, 10),
     });
   } catch (error) {
@@ -444,7 +448,8 @@ async function getRowOfTable(
   res: express.Response,
   tableName: TableKey,
   query: express.Request["query"],
-  entityName: string
+  entityName: string,
+  role: string
 ) {
   const pk = validateOnlyPk(tableName, query);
 
@@ -475,8 +480,20 @@ async function getRowOfTable(
   return sendSuccessOperationMessage(
     res,
     entityName,
-    responseQuery.data.rows[0],
+    filterRowByRole(tableName, role, responseQuery.data.rows[0]),
     "fetched",
     200
   );
+}
+
+export function filterRowByRole(tableName: TableKey, role: string, row: any) {
+  if (!row) return row;
+  const filtered = { ...row };
+  const tableConfig = structure.tables[tableName];
+  for (const [fieldName, column] of Object.entries(tableConfig.columns)) {
+    if (column.readPermissions && !column.readPermissions.includes(role as any)) {
+      delete filtered[fieldName];
+    }
+  }
+  return filtered;
 }

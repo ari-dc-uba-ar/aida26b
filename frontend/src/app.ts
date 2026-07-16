@@ -559,7 +559,10 @@ function updateNavButtonsText(): void {
 
 
 function getReadableTableKeys(tableKeys: TableKey[], role: Role) {
-  return tableKeys.filter(tableKey => (structure.tables[tableKey].permissions.read as readonly Role[]).includes(role))
+  return tableKeys.filter(tableKey => {
+    if (role === 'driver' && tableKey === 'transports') return false;
+    return (structure.tables[tableKey].permissions.read as readonly Role[]).includes(role);
+  });
 }
 
 // sólo se llama cuando el usuario ya está loggeado, vale que currentUser != NULL
