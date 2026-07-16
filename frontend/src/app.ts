@@ -532,7 +532,9 @@ function applyStaticLanguageToUI(): void {
   setLocalizedElementText('new-password-label', structure.commonText.newPassword);
   setLocalizedElementText('password-submit-btn', structure.commonText.update);
   setLocalizedElementText('logout-btn', structure.commonText.logout);
-  setLocalizedElementText('change-driver-status-btn', structure.commonText.driverActions);
+  if (currentUser?.role !== 'driver') {
+    setLocalizedElementText('change-driver-status-btn', structure.commonText.driverActions);
+  }
 }
 
 function updateNavButtonsText(): void {
@@ -704,6 +706,9 @@ function applyLanguageToUI(): void {
 
   if (currentUser && !currentUser.must_change_password) {
     showSection(activeTableKey, false);
+    if (currentUser.role === 'driver') {
+      updateDriverStatusBtn();
+    }
   }
 }
 
@@ -1992,7 +1997,7 @@ async function showAnyForm<K extends TableKey>(
 
   fields.forEach((field) => form.appendChild(field));
 
-  if (tableKey === 'clients' || tableKey === 'transports' && !isEdit) {
+  if ((tableKey === 'clients' || tableKey === 'transports') && !isEdit) {
     appendUsernameField(
       form,
       `${tableKey}-username`,
@@ -2039,7 +2044,7 @@ async function showAnyForm<K extends TableKey>(
 
     const payload = collectFormData(tableKey) as Record<string, unknown>;
 
-    if (tableKey === 'clients' || tableKey === 'transports' && !isEdit) {
+    if ((tableKey === 'clients' || tableKey === 'transports') && !isEdit) {
       payload.password = (document.getElementById(`${tableKey}-password`) as HTMLInputElement).value;
       payload.username = (document.getElementById(`${tableKey}-username`) as HTMLInputElement).value;
     }
