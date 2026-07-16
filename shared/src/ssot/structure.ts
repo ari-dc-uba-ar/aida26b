@@ -243,7 +243,8 @@ export const structure = {
           readonlyOnEdit: true,
           validator: {
             required: true,
-            // TO DO: poner regex para el patrón de los UUID
+            pattern: '^ORD[0-9a-fA-F]{16}$',
+            patternMessage: 'must be in the format ORD followed by 16 hexadecimal characters (e.g. ORD1A2B3C4D5E6F7A8B)',
           },
         },
         order_date: {
@@ -331,7 +332,8 @@ export const structure = {
           label: { es: 'Item', en: 'Item' },
           validator: {
             required: true,
-            // TO DO: quizás validar el código. Ni idea, ponele que los libros tienen ISBN que tienen un formato estándar, podríamos inventarnos que nuestro sistemita también tiene uno con ese espíritu
+            pattern: '^ITM\\d{4}$',
+            patternMessage: 'must be in the format ITM followed by exactly 4 digits (e.g., ITM0001)',
           }
         },
         cod_stock: {

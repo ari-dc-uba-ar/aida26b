@@ -24,11 +24,11 @@ INSERT INTO warehouses VALUES
 -- ==========================
 
 INSERT INTO transports VALUES
-('AA123BB', 'Av. Corrientes 1000', 'ready'),
-('AB456CD', 'Av. Corrientes 1000', 'travelling'),
-('AC789EF', 'Ruta 8 Km 45', 'ready'),
-('AD111GH', 'Ruta 8 Km 45', 'broken'),
-('AE222IJ', 'Parque Industrial Sur', 'ready');
+('AAA-123', 'Av. Corrientes 1000', 'ready'),
+('ABB-456', 'Av. Corrientes 1000', 'travelling'),
+('ACC-789', 'Ruta 8 Km 45', 'ready'),
+('ADD-111', 'Ruta 8 Km 45', 'broken'),
+('AEE-222', 'Parque Industrial Sur', 'ready');
 
 -- ==========================
 -- STOCK TYPES
@@ -59,11 +59,11 @@ INSERT INTO clients VALUES
 -- ==========================
 
 INSERT INTO orders VALUES
-('ORD001', '2026-06-10', '20-11111111-1', 'AB456CD', 'delivered'),
-('ORD002', '2026-06-12', '20-22222222-2', 'AC789EF', 'travelling'),
-('ORD003', '2026-06-15', '20-33333333-3', 'AE222IJ', 'preparing'),
-('ORD004', '2026-06-18', '20-44444444-4', 'AA123BB', 'delivered'),
-('ORD005', '2026-06-20', '20-55555555-5', 'AC789EF', 'travelling');
+('ORD1111111111111111', '2026-06-10', '20-11111111-1', 'ABB-456', 'delivered'),
+('ORD2222222222222222', '2026-06-12', '20-22222222-2', 'ACC-789', 'travelling'),
+('ORD3333333333333333', '2026-06-15', '20-33333333-3', 'AEE-222', 'preparing'),
+('ORD4444444444444444', '2026-06-18', '20-44444444-4', 'AAA-123', 'delivered'),
+('ORD5555555555555555', '2026-06-20', '20-55555555-5', 'ACC-789', 'travelling');
 
 -- ==========================
 -- ITEMS
@@ -72,22 +72,22 @@ INSERT INTO orders VALUES
 -- ==========================
 
 INSERT INTO items VALUES
-('ITM0001', 'NOTEBOOK', 'Av. Corrientes 1000', 'ORD001'),
-('ITM0002', 'NOTEBOOK', 'Av. Corrientes 1000', 'ORD001'),
-('ITM0003', 'MOUSE', 'Av. Corrientes 1000', 'ORD001'),
+('ITM0001', 'NOTEBOOK', 'Av. Corrientes 1000', 'ORD1111111111111111'),
+('ITM0002', 'NOTEBOOK', 'Av. Corrientes 1000', 'ORD1111111111111111'),
+('ITM0003', 'MOUSE', 'Av. Corrientes 1000', 'ORD1111111111111111'),
 
-('ITM0004', 'MONITOR', 'Ruta 8 Km 45', 'ORD002'),
-('ITM0005', 'KEYBOARD', 'Ruta 8 Km 45', 'ORD002'),
+('ITM0004', 'MONITOR', 'Ruta 8 Km 45', 'ORD2222222222222222'),
+('ITM0005', 'KEYBOARD', 'Ruta 8 Km 45', 'ORD2222222222222222'),
 
-('ITM0006', 'PHONE', 'Parque Industrial Sur', 'ORD003'),
-('ITM0007', 'PHONE', 'Parque Industrial Sur', 'ORD003'),
-('ITM0008', 'TABLET', 'Parque Industrial Sur', 'ORD003'),
+('ITM0006', 'PHONE', 'Parque Industrial Sur', 'ORD3333333333333333'),
+('ITM0007', 'PHONE', 'Parque Industrial Sur', 'ORD3333333333333333'),
+('ITM0008', 'TABLET', 'Parque Industrial Sur', 'ORD3333333333333333'),
 
-('ITM0009', 'PRINTER', 'Av. Corrientes 1000', 'ORD004'),
+('ITM0009', 'PRINTER', 'Av. Corrientes 1000', 'ORD4444444444444444'),
 
-('ITM0010', 'MONITOR', 'Ruta 8 Km 45', 'ORD005'),
-('ITM0011', 'MONITOR', 'Ruta 8 Km 45', 'ORD005'),
-('ITM0012', 'KEYBOARD', 'Ruta 8 Km 45', 'ORD005'),
+('ITM0010', 'MONITOR', 'Ruta 8 Km 45', 'ORD5555555555555555'),
+('ITM0011', 'MONITOR', 'Ruta 8 Km 45', 'ORD5555555555555555'),
+('ITM0012', 'KEYBOARD', 'Ruta 8 Km 45', 'ORD5555555555555555'),
 
 -- Stock libre en depósitos
 ('ITM0013', 'NOTEBOOK', 'Av. Corrientes 1000', NULL),
