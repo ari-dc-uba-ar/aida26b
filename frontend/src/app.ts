@@ -883,18 +883,17 @@ paginationContainer.style.alignItems = 'center';
 sharedTable.parentNode?.insertBefore(paginationContainer, sharedTable.nextSibling);
 
 
-function createActionButton<T>(
+function createActionButton(
   className: string,
   label: string,
-  payload: T, // en general, será un string[] de primary keys, pero para cosas como los buttons de inc y dec es un productId pelado o un JSON
-  handler: (payload: T) => void
+  handler: () => void
 ): HTMLButtonElement {
   const button = document.createElement("button");
 
   button.className = className;
   button.textContent = label;
 
-  button.addEventListener("click", () => handler(payload));
+  button.addEventListener("click", () => handler());
 
   return button;
 }
@@ -1016,10 +1015,9 @@ function renderAnyTable<K extends TableKey>(
       const decBtn = createActionButton(
         "qty-btn",
         "-",
-        productId,
-        (id) => {
+        () => {
           if (currentQty > 0) {
-            cart.removeOneItem(id);
+            cart.removeOneItem(productId);
             loadTableData(activeTableKey);
           }
         }
@@ -1031,10 +1029,9 @@ function renderAnyTable<K extends TableKey>(
       const incBtn = createActionButton(
         "qty-btn",
         "+",
-        { id: productId, name: productName },
-        (item) => {
+        () => {
           // TODO, validar si hay stock mandando una request al API de backend. Quizas sea buena idea delegar la responsabilidad de hacer cart.addItem
-          cart.addItem(item);
+          cart.addItem({ id: productId, name: productName });
           loadTableData(activeTableKey);
         }
       )
@@ -1066,15 +1063,13 @@ function renderAnyTable<K extends TableKey>(
         const deliverBtn = createActionButton(
           "deliver-btn",
           getLocalizedText(structure.commonText.deliverOrder),
-          pkValues,
-          window.deliverOrder,
+          () => window.deliverOrder(pkValues),
         );
         
         const couldntDeliverBtn = createActionButton(
           "couldnt-deliver-btn",
           getLocalizedText(structure.commonText.couldntDeliverOrder),
-          pkValues,
-          window.couldntDeliverOrder
+          () => window.couldntDeliverOrder(pkValues)
         );
         
         driverActionsTd.appendChild(deliverBtn);
@@ -1105,8 +1100,7 @@ function renderAnyTable<K extends TableKey>(
         const cancelBtn = createActionButton(
           "delete-btn",
           getLocalizedText(tableStructure.cancelButtonLabel || structure.commonText.cancel),
-          pkValues,
-          window.cancelOrder
+          () => window.cancelOrder(pkValues)
         )
 
         cancelTd.appendChild(cancelBtn);
@@ -1127,15 +1121,13 @@ function renderAnyTable<K extends TableKey>(
       const editBtn = createActionButton(
         "edit-btn",
         getLocalizedText(structure.commonText.edit),
-        pkValues,
-        (values) => {window.editRecord(tableKey, ...values)}
+        () => {window.editRecord(tableKey, ...pkValues)}
       )
 
       const deleteBtn = createActionButton(
         "delete-btn",
         getLocalizedText(structure.commonText.delete),
-        pkValues,
-        (values) => {window.deleteRecord(tableKey, ...values)}
+        () => {window.deleteRecord(tableKey, ...pkValues)}
       )
 
       actionsTd.appendChild(editBtn);
