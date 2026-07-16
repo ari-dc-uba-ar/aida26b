@@ -15,8 +15,9 @@ import { deleteHandler } from './routes/delete';
 import { checkoutHandler } from './routes/cart';
 import { FormDataMap, TableKey, TableRecordMap } from '../../shared/src/types/types';
 import { formatTableColumnsForQuery } from './helpers';
-import { sendErrorMessage } from './status_messages';
+import { sendErrorMessage, sendNotFoundMessage, sendSuccessOperationMessage } from './status_messages';
 import { DriverStatus, OrderStatus } from '../../shared/src/ssot/structure';
+import { sendErrorsIfInvalid, validateOnlyPk } from './validation/validate';
 
 // Load environment variables before reading process.env
 dotenv.config();
@@ -595,6 +596,104 @@ app.post(
   async (req: AuthedRequest, res) => checkoutHandler(req, res)
 );
 
+app.post(
+  "/api/orders/cancel",
+  requireAuth,
+  requirePasswordReady,
+  attachDbSession,
+  async (req: AuthedRequest, res) => {
+    return cancelOrderHandler(req, res, req.dbClient ?? pool);
+  }
+);
+
+async function cancelOrderHandler(
+  req: express.Request,
+  res: express.Response,
+  pool: Pool | PoolClient
+) {
+
+  const validatedPk = validateOnlyPk("orders", req.body);
+
+  if (sendErrorsIfInvalid(res, validatedPk)) {
+    return;
+  }
+
+  const uuid = (validatedPk.data as { uuid: string }).uuid;
+
+  try {
+    await pool.query("BEGIN");
+
+    const selectResult = await pool.query(
+      `
+      SELECT *
+      FROM orders
+      WHERE uuid = $1
+      FOR UPDATE
+      `,
+      [uuid]
+    );
+
+    if (selectResult.rowCount === 0) {
+      await pool.query("ROLLBACK");
+      return sendNotFoundMessage(res, "order");
+    }
+
+    const order = selectResult.rows[0];
+
+    if (order.status !== OrderStatus.PREPARING) {
+      await pool.query("ROLLBACK");
+
+      return res.status(400).json({
+        success: false,
+        message: `Only orders in '${OrderStatus.PREPARING}' status can be cancelled`,
+      });
+    }
+
+    // updateamos la order
+    const updateResult = await pool.query(
+      `
+      UPDATE orders
+      SET status = $1
+      WHERE uuid = $2
+      RETURNING *
+      `,
+      [
+        OrderStatus.CANCELLED,
+        uuid,
+      ]
+    );
+
+    // dejamos como libres a los items asociados a la misma
+    await pool.query(
+      `
+      UPDATE items
+      SET order_uuid = NULL
+      WHERE order_uuid = $1
+      `,
+      [uuid]
+    );
+
+    await pool.query("COMMIT");
+
+    return sendSuccessOperationMessage(
+      res,
+      "order",
+      updateResult.rows[0],
+      OrderStatus.CANCELLED,
+      202
+    );
+
+  } catch (error) {
+
+    await pool.query("ROLLBACK");
+
+    return sendErrorMessage(
+      res,
+      (error as Error).message
+    );
+  }
+}
+
 async function updateDriverStatusHandler(
   req: express.Request,
   res: express.Response,
@@ -706,6 +805,7 @@ app.post(
     return updateDriverStatusHandler(req, res, req.dbClient ?? pool);
   }
 );
+
 // Generic academic API routes
 app.get(
   '/api/:tableName',

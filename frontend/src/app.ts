@@ -1101,7 +1101,7 @@ function renderAnyTable<K extends TableKey>(
           const values = JSON.parse(
             (event.currentTarget as HTMLElement).dataset.pk || '[]'
           );
-          window.cancelOrder(tableKey, ...values);
+          window.cancelOrder(values);
         });
 
         cancelTd.appendChild(cancelBtn);
@@ -2126,9 +2126,8 @@ declare global {
     deliverOrder: (
       pkValues: string[]
     ) => Promise<void>;
-    cancelOrder: <K extends TableKey>(
-      tableKey: K,
-      ...pkValues: string[]
+    cancelOrder: (
+      pkValues: string[]
     ) => Promise<void>;
   }
 }
@@ -2219,205 +2218,174 @@ window.deleteRecord = async <K extends TableKey>(
   }
 };
 
-// las pk de la order, en nuestro caso va a ser sólo el UUID
-window.couldntDeliverOrder = async (
-  pkValues: string[]
-) => {
- 
+// se trae una order basado en su pk
+async function loadOrder(pkValues: string[]): Promise<{
+  record: TableRecordMap["orders"];
+  queryParams: string;
+}> {
+
   const tableKey = "orders";
 
-  const confirmed = confirm(
-    `${getLocalizedText(structure.commonText.markAsCouldntDeliverOrder)}`
+  const queryParams = new URLSearchParams(
+    getPkFields(tableKey).map((pkFieldName, index) => [
+      pkFieldName,
+      pkValues[index] ?? "",
+    ])
+  ).toString();
+
+  const response = await apiFetch(`/${tableKey}?${queryParams}`);
+
+  if (!response.ok) {
+    throw new Error(await errorMessage(response));
+  }
+
+  const responseAnswer: ApiResponse = await response.json();
+
+  if (!responseAnswer.success) {
+    throw new Error(responseAnswer.message ?? "Error loading order");
+  }
+
+  return {
+    record: responseAnswer.data as TableRecordMap["orders"],
+    queryParams,
+  };
+}
+
+// ele pone a la orden dada el status indicado y persiste a DB
+async function updateOrderStatus(
+  record: TableRecordMap["orders"],
+  queryParams: string,
+  newStatus: string
+): Promise<void> {
+
+  record.status = newStatus;
+
+  const response = await apiFetch(`/orders?${queryParams}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(record),
+  });
+
+  if (!response.ok) {
+    throw new Error(await errorMessage(response));
+  }
+
+  const answer: ApiResponse = await response.json();
+
+  if (!answer.success) {
+    throw new Error(answer.message ?? "Error updating order");
+  }
+}
+
+// hace la action que le pasamos, muestra el mensaje de success (o falla) y recarga la tablita de orders
+async function executeOrderAction(
+  action: () => Promise<void>,
+  successMessage: string
+): Promise<void> {
+  try {
+    await action();
+
+    showSuccessMessage(successMessage);
+    loadTableData("orders");
+  } catch (error) {
+    const message = (error as Error).message;
+
+    if (
+      message !== "Authentication required" &&
+      message !== "Forbidden"
+    ) {
+      showErrorMessage(message);
+    }
+  }
+}
+
+window.couldntDeliverOrder = async (pkValues: string[]) =>
+  executeOrderAction(
+    async () => {
+      if (
+        !confirm(
+          getLocalizedText(
+            structure.commonText.markAsCouldntDeliverOrder
+          )
+        )
+      ) {
+        return;
+      }
+
+      const { record, queryParams } = await loadOrder(pkValues);
+
+      await updateOrderStatus(
+        record,
+        queryParams,
+        OrderStatus.FAILED
+      );
+    },
+    "Order updated."
   );
 
-  if (!confirmed) return;
+window.deliverOrder = async (pkValues: string[]) =>
+  executeOrderAction(
+    async () => {
+      const { record, queryParams } = await loadOrder(pkValues);
 
-  try {
-    const queryParams = new URLSearchParams(
-      getPkFields(tableKey).map((pkFieldName, index) => [
-        pkFieldName,
-        pkValues[index] ?? "",
-      ])
-    ).toString();
-
-    const response = await apiFetch(`/${tableKey}?${queryParams}`);
-
-    if (!response.ok) {
-      return showErrorMessage(await errorMessage(response));
-    }
-
-    const responseAnswer: ApiResponse = await response.json();
-
-    if (!responseAnswer.success) {
-      return showErrorMessage(
-        responseAnswer.message ?? "Error loading order"
+      const enteredCuit = prompt(
+        getLocalizedText(structure.commonText.askForClientCUIT)
       );
-    }
 
-    const record = responseAnswer.data as TableRecordMap["orders"];
+      if (enteredCuit === null) return;
 
-    // modificar únicamente el estado
-    record.status = OrderStatus.FAILED;
+      if (enteredCuit.trim() !== record.cuit_client) {
+        throw new Error(
+          getLocalizedText(
+            structure.commonText.incorrectClientCUIT
+          )
+        );
+      }
 
-    // PUT
-    const updateResponse = await apiFetch(`/${tableKey}?${queryParams}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(record),
-    });
-
-    if (!updateResponse.ok) {
-      return showErrorMessage(await errorMessage(updateResponse));
-    }
-
-    const updateAnswer: ApiResponse = await updateResponse.json();
-
-    if (!updateAnswer.success) {
-      return showErrorMessage(
-        updateAnswer.message ?? "Error updating order"
+      await updateOrderStatus(
+        record,
+        queryParams,
+        OrderStatus.DELIVERED
       );
-    }
-
-    showSuccessMessage(responseAnswer.message ?? '');
-    loadTableData(tableKey);
-  } catch (error) {
-    const message = (error as Error).message;
-
-    if (message !== "Authentication required" && message !== "Forbidden") {
-      setMessage(getLocalizedText(structure.commonText.errorSaving));
-      console.error("Error updating order:", error);
-    }
-  }
-};
-
-// muy similar a la anterior, sólo que debemos  pedir el CUIT
-window.deliverOrder = async (
-  pkValues: string[]
-) => {
-  
-  const tableKey = "orders";
-
-  try {
-    const queryParams = new URLSearchParams(
-      getPkFields(tableKey).map((pkFieldName, index) => [
-        pkFieldName,
-        pkValues[index] ?? "",
-      ])
-    ).toString();
-
-    const response = await apiFetch(`/${tableKey}?${queryParams}`);
-
-    if (!response.ok) {
-      return showErrorMessage(await errorMessage(response));
-    }
-
-    const responseAnswer: ApiResponse = await response.json();
-
-    if (!responseAnswer.success) {
-      return showErrorMessage(
-        responseAnswer.message ?? "Error loading order"
-      );
-    }
-
-    const record = responseAnswer.data as TableRecordMap["orders"];
-
-    // pedimos CUIT
-    const enteredCuit = prompt(
-      `${getLocalizedText(structure.commonText.askForClientCUIT)}`
-    );
-
-    if (enteredCuit === null) return;
-
-    // si está mal, a casita
-    if (enteredCuit.trim() !== record.cuit_client) {
-      return showErrorMessage(
-        `${getLocalizedText(structure.commonText.incorrectClientCUIT)}`
-      );
-    }
-
-    // marcamos como entregado
-    record.status = OrderStatus.DELIVERED;
-
-    const updateResponse = await apiFetch(`/${tableKey}?${queryParams}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(record),
-    });
-
-    if (!updateResponse.ok) {
-      return showErrorMessage(await errorMessage(updateResponse));
-    }
-
-    const updateAnswer: ApiResponse = await updateResponse.json();
-
-    if (!updateAnswer.success) {
-      return showErrorMessage(
-        updateAnswer.message ?? "Error updating order"
-      );
-    }
-
-    showSuccessMessage(responseAnswer.message ?? '');
-    loadTableData(tableKey);
-  } catch (error) {
-    const message = (error as Error).message;
-
-    if (message !== "Authentication required" && message !== "Forbidden") {
-      setMessage(getLocalizedText(structure.commonText.errorSaving));
-      console.error("Error delivering order:", error);
-    }
-  }
-};
-
-window.cancelOrder = async <K extends TableKey>(
-  tableKey: K,
-  ...pkValues: string[]
-) => {
-  const tableConfig = structure.tables[tableKey];
-  const entityName = getLocalizedText(tableConfig.uiName).toLowerCase();
-
-  const confirmed = confirm(
-    `${getLocalizedText(structure.commonText.cancelConfirm)} ${entityName}?`
+    },
+    "Order delivered."
   );
 
-  if (!confirmed) return;
+window.cancelOrder = async (pkValues: string[]) =>
+  executeOrderAction(
+    async () => {
+      if (
+        !confirm(
+          getLocalizedText(structure.commonText.cancelConfirm)
+        )
+      ) {
+        return;
+      }
 
-  try {
-    const queryParams = new URLSearchParams(
-      getPkFields(tableKey).map((pkFieldName, index) => [
-        pkFieldName,
-        pkValues[index] ?? '',
-      ])
-    ).toString();
+      const [uuid] = pkValues;
 
-    const response = await apiFetch(`/${tableKey}?${queryParams}&cancel=true`, {
-      method: 'PUT',
-    });
+      const response = await apiFetch("/orders/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ uuid }),
+      });
 
-    if (!response.ok) {
-      return showErrorMessage(await errorMessage(response));
-    }
+      if (!response.ok) {
+        throw new Error(await errorMessage(response));
+      }
 
-    const responseAnswer: ApiResponse = await response.json();
+      const answer: ApiResponse = await response.json();
 
-    if (!responseAnswer.success) {
-      return showErrorMessage(responseAnswer.message ?? 'Error cancelling order');
-    }
-
-    showSuccessMessage(responseAnswer.message ?? '');
-    loadTableData(tableKey);
-  } catch (error) {
-    const message = (error as Error).message;
-
-    if (message !== 'Authentication required' && message !== 'Forbidden') {
-      setMessage(getLocalizedText(structure.commonText.errorDeleting));
-      console.error(`Error deleting ${tableKey}:`, error);
-    }
-  }
-};
+      if (!answer.success) {
+        throw new Error(answer.message ?? "Error cancelling order");
+      }
+    },
+    "Order cancelled."
+  );
 
 // -----------------------------------------------------------------------------
 // Initialization
