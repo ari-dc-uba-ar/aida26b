@@ -2279,7 +2279,7 @@ async function updateOrderStatus(
   }
 }
 
-// hace la action que le pasamos, muestra el mensaje de success (o falla) y recarga la tablita de orders
+// hace la action que le pasamos (lógica de negocio), muestra el mensaje de success (o falla) y recarga la tablita de orders
 async function executeOrderAction(
   action: () => Promise<void>,
   successMessage: string
