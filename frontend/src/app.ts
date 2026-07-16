@@ -154,6 +154,7 @@ function showApp(user: AuthUser): void {
   appShell.style.display = 'block';
   document.getElementById('cart-section')!.style.display = 'none';
   currentUserEl.textContent = `${user.username} (${user.role})`;
+  openCartBtn.style.display = currentUser.role === 'client' ? 'inline-block' : 'none';
 
   activeTableKey = getReadableTableKeys(tableKeys, currentUser.role)[0]; // asumimos que cada rol tiene al menos una tabla visible
 
@@ -927,15 +928,16 @@ function renderAnyTable<K extends TableKey>(
   });
 
   // HTML del carrito (solo para stocks, visible para todos)
-  if (isStocksTable) {
+  if (isStocksTable && currentUser!.role === 'client') {
     const cartHeader = document.createElement('th');
     cartHeader.textContent = getLocalizedText(structure.commonText.cartActions);
     headerRow.appendChild(cartHeader);
+  }
 
+  if (isStocksTable) {
     const totalAvailableStockHeader = document.createElement('th');
     totalAvailableStockHeader.textContent = getLocalizedText(structure.commonText.totalAvailableStock);
     headerRow.appendChild(totalAvailableStockHeader);
-
   }
 
   // HTML específico para que los drivers puedan actualizar el estado de sus pedidos
@@ -981,52 +983,54 @@ function renderAnyTable<K extends TableKey>(
       // el 'as unknown' es para que no se ponga la gorra el compilador (lo dice el warning si lo quitamos), porque estamos convirtiendo un tipo genérico en algo re específico
       // y asume que nos estamos equivocando 
       const stockRecord = record as unknown as StockWithTotal;
-      const cartTd = document.createElement('td');
-      const productId = String(stockRecord.cod_stock);
-      const productName = String(stockRecord.name);
 
-      const cartItem = cart.getItems().find(item => item.id === productId);
-      const currentQty = cartItem ? cartItem.quantity : 0;
-      // Contenedor del control
-      const controlDiv = document.createElement('div');
-      controlDiv.className = 'cart-quantity-control';
+      if (currentUser!.role === 'client') {
+        const cartTd = document.createElement('td');
+        const productId = String(stockRecord.cod_stock);
+        const productName = String(stockRecord.name);
 
-      const qtySpan = document.createElement('span');
-      qtySpan.textContent = String(currentQty);
-      qtySpan.className = 'qty-value';
+        const cartItem = cart.getItems().find(item => item.id === productId);
+        const currentQty = cartItem ? cartItem.quantity : 0;
+        // Contenedor del control
+        const controlDiv = document.createElement('div');
+        controlDiv.className = 'cart-quantity-control';
+
+        const qtySpan = document.createElement('span');
+        qtySpan.textContent = String(currentQty);
+        qtySpan.className = 'qty-value';
+
+        // Boton - 
+        const decBtn = document.createElement('button');
+        decBtn.textContent = '−';
+        decBtn.className = 'qty-btn';
+        decBtn.disabled = currentQty === 0;
+        decBtn.addEventListener('click', () => {
+          if (currentQty > 0) {
+            cart.removeOneItem(productId);
+            loadTableData(activeTableKey);
+          }
+        });
+        // Botón +
+        const incBtn = document.createElement('button');
+        incBtn.textContent = '+';
+        incBtn.className = 'qty-btn';
+        incBtn.addEventListener('click', () => {
+          // TODO, validar si hay stock mandando una request al API de backend. Quizas sea buena idea delegar la responsabilidad de hacer cart.addItem
+          cart.addItem({ id: productId, name: productName });
+          loadTableData(activeTableKey);
+        });
+
+        controlDiv.appendChild(decBtn);
+        controlDiv.appendChild(qtySpan);
+        controlDiv.appendChild(incBtn);
+        cartTd.appendChild(controlDiv);
+        row.appendChild(cartTd);
+      }
 
       const availableQtyTd = document.createElement('td');
       const availableQtySpan = document.createElement('span');
       availableQtySpan.textContent = String(stockRecord.items_total_available);
-
-
-      // Boton - 
-      const decBtn = document.createElement('button');
-      decBtn.textContent = '−';
-      decBtn.className = 'qty-btn';
-      decBtn.disabled = currentQty === 0;
-      decBtn.addEventListener('click', () => {
-        if (currentQty > 0) {
-          cart.removeOneItem(productId);
-          loadTableData(activeTableKey);
-        }
-      });
-      // Botón +
-      const incBtn = document.createElement('button');
-      incBtn.textContent = '+';
-      incBtn.className = 'qty-btn';
-      incBtn.addEventListener('click', () => {
-        // TODO, validar si hay stock mandando una request al API de backend. Quizas sea buena idea delegar la responsabilidad de hacer cart.addItem
-        cart.addItem({ id: productId, name: productName });
-        loadTableData(activeTableKey);
-      });
-
-      controlDiv.appendChild(decBtn);
-      controlDiv.appendChild(qtySpan);
-      controlDiv.appendChild(incBtn);
-      cartTd.appendChild(controlDiv);
       availableQtyTd.appendChild(availableQtySpan);
-      row.appendChild(cartTd);
       row.appendChild(availableQtyTd);
     }
 
