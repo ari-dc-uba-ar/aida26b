@@ -13,6 +13,7 @@ import {
   RendererFunc,
   Response as ApiResponse,
   Role,
+  StockWithTotal,
 } from '@shared/types/types';
 import { getPkFields } from '@shared/utils/utils';
 import { validateField } from '@shared/validation/validate';
@@ -898,6 +899,220 @@ paginationContainer.style.gap = '10px';
 paginationContainer.style.alignItems = 'center';
 sharedTable.parentNode?.insertBefore(paginationContainer, sharedTable.nextSibling);
 
+
+function createActionButton(
+  className: string,
+  label: string,
+  handler: () => void
+): HTMLButtonElement {
+  const button = document.createElement("button");
+
+  button.className = className;
+  button.textContent = label;
+
+  button.addEventListener("click", () => handler());
+
+  return button;
+}
+
+// crud genérico
+function createAdminActions<K extends TableKey>(
+  tableKey: K,
+  pkValues: string[],
+): HTMLTableCellElement | null {
+
+  if (!canWriteAcademic())
+    return null;
+
+  const td = document.createElement("td");
+  td.className = "actions";
+
+  td.append(
+    createActionButton(
+      "edit-btn",
+      getLocalizedText(structure.commonText.edit),
+      () => window.editRecord(tableKey, ...pkValues)
+    )
+  );
+
+  td.append(
+    createActionButton(
+      "delete-btn",
+      getLocalizedText(structure.commonText.delete),
+      () => window.deleteRecord(tableKey, ...pkValues)
+    )
+  );
+
+  return td;
+}
+
+// los buttons para entregar o marcar como que no se pudo entregar un pedido
+function createDriverActions(
+    record: TableRecordMap["orders"],
+    pkValues: string[],
+): HTMLTableCellElement | null {
+
+    if (currentUser?.role !== "driver")
+        return null;
+
+
+    const td = document.createElement("td");
+    td.className = "actions";
+
+    if (record.status !== OrderStatus.TRAVELLING) {
+      td.textContent = "-";
+      td.className = "actions text-muted";
+      return td;
+    }
+
+    td.append(
+        createActionButton(
+            "deliver-btn",
+            getLocalizedText(structure.commonText.deliverOrder),
+            () => window.deliverOrder(pkValues),
+        )
+    );
+
+    td.append(
+        createActionButton(
+            "couldnt-deliver-btn",
+            getLocalizedText(structure.commonText.couldntDeliverOrder),
+            () => window.couldntDeliverOrder(pkValues),
+        )
+    );
+
+    return td;
+}
+
+// cancelar pedidos en preparación
+function createClientActions(
+  tableStructure: TableStructure,
+  record: TableRecordMap["orders"],
+  pkValues: string[],
+): HTMLTableCellElement | null {
+
+  if (currentUser?.role !== "client")
+    return null;
+
+  if (record.status !== OrderStatus.PREPARING)
+    return null;
+
+  const td = document.createElement("td");
+  td.className = "actions";
+
+  td.append(
+    createActionButton(
+      "delete-btn",
+      getLocalizedText(
+        tableStructure.cancelButtonLabel ??
+        structure.commonText.cancel
+      ),
+      () => window.cancelOrder(pkValues)
+    )
+  );
+
+  return td;
+}
+
+// meter cosas al carrito
+function createCartActions(
+  record: StockWithTotal,
+): HTMLTableCellElement[] {
+
+  const cells: HTMLTableCellElement[] = [];
+
+  if (currentUser!.role === 'client') {
+    const productId = String(record.cod_stock);
+    const productName = String(record.name);
+
+    const cartItem = cart.getItems().find(item => item.id === productId);
+    const currentQty = cartItem?.quantity ?? 0;
+
+    const cartTd = document.createElement("td");
+    const controlDiv = document.createElement("div");
+    controlDiv.className = "cart-quantity-control";
+
+    const qtySpan = document.createElement("span");
+    qtySpan.className = "qty-value";
+    qtySpan.textContent = String(currentQty);
+
+    const decBtn = createActionButton(
+      "qty-btn",
+      "-",
+      () => {
+        cart.removeOneItem(productId);
+        loadTableData(activeTableKey);
+      },
+    );
+
+    decBtn.disabled = currentQty === 0;
+
+    const incBtn = createActionButton(
+      "qty-btn",
+      "+",
+      () => {
+        cart.addItem({
+          id: productId,
+          name: productName,
+        });
+
+        loadTableData(activeTableKey);
+      },
+    );
+
+    controlDiv.append(decBtn, qtySpan, incBtn);
+    cartTd.append(controlDiv);
+    cells.push(cartTd);
+  }
+
+  const availableTd = document.createElement("td");
+  availableTd.textContent = String(record.items_total_available);
+  cells.push(availableTd);
+
+  return cells;
+}
+
+// en base a qué tabla es, la data que tiene su record asociado y mis permisos, crea las celdas de buttons de interacción que NO SON del cart
+function createRowActions<K extends TableKey>(
+  tableKey: K,
+  tableStructure: TableStructure,
+  record: TableRecordMap[K],
+  pkValues: string[],
+): HTMLTableCellElement[] {
+
+  const cells: HTMLTableCellElement[] = [];
+
+  // órdenes (buttons de driver y clients)
+  if (tableKey === "orders") {
+
+    const order = record as TableRecordMap["orders"];
+
+    const driverCell = createDriverActions(order, pkValues);
+    if (driverCell) {
+      cells.push(driverCell);
+    }
+
+    const clientCell = createClientActions(tableStructure, order, pkValues,);
+
+    if (clientCell) {
+      cells.push(clientCell);
+    }
+
+  }
+
+  // el CRUD genérico para admins
+  const adminCell = createAdminActions(
+    tableKey,
+    pkValues,
+  );
+
+  if (adminCell) {
+    cells.push(adminCell);
+  }
+
+  return cells;
+}
+
 function renderAnyTable<K extends TableKey>(
   tableKey: K,
   records: TableRecordMap[K][]
@@ -1004,186 +1219,26 @@ function renderAnyTable<K extends TableKey>(
       row.appendChild(td);
     });
 
-    // Celdas del carrito y quantity para stocks
-    if (isStocksTable) {
-      type StockWithTotal = TableRecordMap['stocks'] & {
-        items_total_available: number; // O el tipo de dato que corresponda (ej. string si viene de un SUM de Postgres)
-      };
+    // celdas del carrito y quantity para stocks
+    if (tableKey === "stocks") {
 
-      // el 'as unknown' es para que no se ponga la gorra el compilador (lo dice el warning si lo quitamos), porque estamos convirtiendo un tipo genérico en algo re específico
-      // y asume que nos estamos equivocando 
       const stockRecord = record as unknown as StockWithTotal;
-
-      if (currentUser!.role === 'client') {
-        const cartTd = document.createElement('td');
-        const productId = String(stockRecord.cod_stock);
-        const productName = String(stockRecord.name);
-
-        const cartItem = cart.getItems().find(item => item.id === productId);
-        const currentQty = cartItem ? cartItem.quantity : 0;
-        // Contenedor del control
-        const controlDiv = document.createElement('div');
-        controlDiv.className = 'cart-quantity-control';
-
-        const qtySpan = document.createElement('span');
-        qtySpan.textContent = String(currentQty);
-        qtySpan.className = 'qty-value';
-
-        // Boton - 
-        const decBtn = document.createElement('button');
-        decBtn.textContent = '−';
-        decBtn.className = 'qty-btn';
-        decBtn.disabled = currentQty === 0;
-        decBtn.addEventListener('click', () => {
-          if (currentQty > 0) {
-            cart.removeOneItem(productId);
-            loadTableData(activeTableKey);
-          }
-        });
-        // Botón +
-        const incBtn = document.createElement('button');
-        incBtn.textContent = '+';
-        incBtn.className = 'qty-btn';
-        incBtn.addEventListener('click', () => {
-          // TODO, validar si hay stock mandando una request al API de backend. Quizas sea buena idea delegar la responsabilidad de hacer cart.addItem
-          cart.addItem({ id: productId, name: productName });
-          loadTableData(activeTableKey);
-        });
-
-        controlDiv.appendChild(decBtn);
-        controlDiv.appendChild(qtySpan);
-        controlDiv.appendChild(incBtn);
-        cartTd.appendChild(controlDiv);
-        row.appendChild(cartTd);
-      }
-
-      const availableQtyTd = document.createElement('td');
-      const availableQtySpan = document.createElement('span');
-      availableQtySpan.textContent = String(stockRecord.items_total_available);
-      availableQtyTd.appendChild(availableQtySpan);
-      row.appendChild(availableQtyTd);
+      const cells = createCartActions(stockRecord);
+      cells.forEach(cell => row.appendChild(cell));
     }
 
+    const pkValues = pkFields.map(field =>
+      String(record[field as keyof TableRecordMap[K]] ?? "")
+    );
 
-    // acciones del driver sobre los pedidos
-    if (showOrdersStatusActions) {
-      const driverActionsTd = document.createElement('td');
-      driverActionsTd.className = 'actions';
-
-      const pkValues = pkFields.map((field) =>
-        String(record[field as keyof TableRecordMap[K]] ?? '')
-      );
-
-      const isTravelling = String((record as TableRecordMap["orders"]).status) == OrderStatus.TRAVELLING;
-
-      // sólo le dejamos updatear los pedidos que están viajando
-      if (isTravelling) {
-        const deliverBtn = document.createElement('button');
-        deliverBtn.className = 'delivered-btn';
-        deliverBtn.textContent = getLocalizedText(structure.commonText.deliverOrder);
-        deliverBtn.dataset.pk = JSON.stringify(pkValues);
-        deliverBtn.addEventListener('click', (event) => {
-
-          //LOGICA PARA PEDIRLE AL DRIVER QUE INGRESE EL CUIT DEL CLIENT
-          const values = JSON.parse(
-            (event.currentTarget as HTMLElement).dataset.pk || '[]'
-          );
-
-          window.deliverOrder(values);
-
-        });
-
-        const couldntDeliverBtn = document.createElement('button');
-        couldntDeliverBtn.className = 'couldnt-deliver-btn';
-        couldntDeliverBtn.textContent = getLocalizedText(structure.commonText.couldntDeliverOrder);
-        couldntDeliverBtn.dataset.pk = JSON.stringify(pkValues);
-        couldntDeliverBtn.addEventListener('click', (event) => {
-
-          // LOGICA PARA HACER UNA WINDOW DE CONFIRMACIÓN DE QUE NO SE PUDO ENTREGAR EL PEDIDO
-          const values = JSON.parse(
-            (event.currentTarget as HTMLElement).dataset.pk || '[]'
-          );
-
-          window.couldntDeliverOrder(values);
-
-        });
-
-        driverActionsTd.appendChild(deliverBtn);
-        driverActionsTd.appendChild(couldntDeliverBtn);   
-      } else {
-        const placeholderSpan = document.createElement("span");
-        placeholderSpan.textContent = "-";
-        placeholderSpan.className = "text-muted";
-        driverActionsTd.appendChild(placeholderSpan);
-      }
-
-      row.appendChild(driverActionsTd);
-    }
- 
-    // que un client pueda eliminar pedidos
-    if (tableKey == "orders" && currentUser!.role == "client") {
-      
-      const cancelTd = document.createElement('td');
-      cancelTd.className = 'actions';
-      
-      const orderIsPreparing = (record as any).status === OrderStatus.PREPARING;
-
-      if (orderIsPreparing) {
-        const pkValues = pkFields.map((field) =>
-          String(record[field as keyof TableRecordMap[K]] ?? '')
-        );
-
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'delete-btn';
-        cancelBtn.textContent = getLocalizedText(tableStructure.cancelButtonLabel || structure.commonText.cancel);
-        cancelBtn.dataset.pk = JSON.stringify(pkValues);
-        cancelBtn.addEventListener('click', (event) => {
-          const values = JSON.parse(
-            (event.currentTarget as HTMLElement).dataset.pk || '[]'
-          );
-          window.cancelOrder(values);
-        });
-
-        cancelTd.appendChild(cancelBtn);
-      }
-
-      row.appendChild(cancelTd);
-    }
-
-    // Acciones de admin (editar/eliminar)
-    if (showActions) {
-      const actionsTd = document.createElement('td');
-      actionsTd.className = 'actions';
-
-      const pkValues = pkFields.map((field) =>
-        String(record[field as keyof TableRecordMap[K]] ?? '')
-      );
-
-      const editBtn = document.createElement('button');
-      editBtn.className = 'edit-btn';
-      editBtn.textContent = getLocalizedText(structure.commonText.edit);
-      editBtn.dataset.pk = JSON.stringify(pkValues);
-      editBtn.addEventListener('click', (event) => {
-        const values = JSON.parse(
-          (event.currentTarget as HTMLElement).dataset.pk || '[]'
-        );
-        window.editRecord(tableKey, ...values);
-      });
-
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'delete-btn';
-      deleteBtn.textContent = getLocalizedText(structure.commonText.delete);
-      deleteBtn.dataset.pk = JSON.stringify(pkValues);
-      deleteBtn.addEventListener('click', (event) => {
-        const values = JSON.parse(
-          (event.currentTarget as HTMLElement).dataset.pk || '[]'
-        );
-        window.deleteRecord(tableKey, ...values);
-      });
-
-      actionsTd.appendChild(editBtn);
-      actionsTd.appendChild(deleteBtn);
-      row.appendChild(actionsTd);
+    // celdas para las aciones que tiene permitido este rol sobre esta tabla y valores
+    for (const cell of createRowActions(
+      tableKey,
+      tableStructure,
+      record,
+      pkValues,
+    )) {
+      row.appendChild(cell);
     }
 
     tbody.appendChild(row);
