@@ -18,7 +18,7 @@ import { formatTableColumnsForQuery } from './helpers';
 import { sendErrorMessage, sendNotFoundMessage, sendSuccessOperationMessage } from './status_messages';
 import { DriverStatus, OrderStatus } from '../../shared/src/ssot/structure';
 import { sendErrorsIfInvalid, validateOnlyPk } from './validation/validate';
-import { cancelOrderHandler, updateDriverStatusHandler } from './routes/orders';
+import { cancelOrderHandler, updateDriverStatusHandler, updateOrderHandler } from './routes/orders';
 
 // Load environment variables before reading process.env
 dotenv.config();
@@ -151,7 +151,8 @@ const requireAdmin: RequestHandler = async (req, res, next) => {
 const requireAcademicWrite: RequestHandler = async (req, res, next) => {
   const user = (req as AuthedRequest).user;
   const role = user?.role;
-  const tableName = req.params.tableName;
+  // Si la ruta es específica (ej. /api/orders), req.params.tableName es undefined y se obtiene del path
+  const tableName = req.params.tableName || (req.path.startsWith('/api/') ? req.path.split('/')[2] : undefined);
 
   if (role === 'admin' || role === 'editor') {
     return next();
@@ -644,6 +645,17 @@ app.post(
       return createEntityWithUser("transports", req, res);
     }
     return postHandler(req, res, req.dbClient ?? pool);
+  }
+);
+
+app.put(
+  '/api/orders',
+  requireAuth,
+  requirePasswordReady,
+  attachDbSession,
+  requireAcademicWrite,
+  async (req: AuthedRequest, res) => {
+    return updateOrderHandler(req, res, req.dbClient ?? pool);
   }
 );
 

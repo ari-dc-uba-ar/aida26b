@@ -5,6 +5,7 @@ import type { Request, Response } from 'express';
 import { sendErrorsIfInvalid, validateOnlyPk } from "../validation/validate";
 import { sendErrorMessage, sendNotFoundMessage, sendSuccessOperationMessage } from "../status_messages";
 import { DriverStatus, OrderStatus } from "../../../shared/src/ssot/structure";
+import { putHandler } from "./put";
 
 
 export async function cancelOrderHandler(
@@ -54,7 +55,7 @@ export async function cancelOrderHandler(
     const updateResult = await pool.query(
       `
       UPDATE orders
-      SET status = $1
+      SET status = $1, delivered_at_time = NULL
       WHERE uuid = $2
       RETURNING *
       `,
@@ -155,7 +156,7 @@ export async function updateDriverStatusHandler(
       await pool.query(
         `
           UPDATE orders
-          SET status = $1
+          SET status = $1, delivered_at_time = NULL
           WHERE
             status = $2
             AND plate_transport = $3
@@ -173,12 +174,27 @@ export async function updateDriverStatusHandler(
       await pool.query(
         `
           UPDATE orders
-          SET status = $1
+          SET status = $1, delivered_at_time = NULL
           WHERE
             status = $2
             AND plate_transport = $3
           `,
         [OrderStatus.FAILED, OrderStatus.TRAVELLING, license_plate]
+      );
+    }
+
+    // broken
+    if (availability === DriverStatus.BROKEN) {
+      // desasigna sus pedidos en preparación o viaje y los vuelve a preparación
+      await pool.query(
+        `
+          UPDATE orders
+          SET status = $1, plate_transport = NULL, delivered_at_time = NULL
+          WHERE
+            (status = $1 OR status = $2)
+            AND plate_transport = $3
+          `,
+        [OrderStatus.PREPARING, OrderStatus.TRAVELLING, license_plate]
       );
     }
 
@@ -195,4 +211,20 @@ export async function updateDriverStatusHandler(
 
     return sendErrorMessage(res, (error as Error).message);
   }
+}
+
+export async function updateOrderHandler(
+  req: Request,
+  res: Response,
+  pool: Pool | PoolClient
+) {
+  req.params.tableName = 'orders';
+  if (req.body) {
+    if (req.body.status === OrderStatus.DELIVERED) {
+      req.body.delivered_at_time = new Date().toISOString();
+    } else if (req.body.status) {
+      req.body.delivered_at_time = null;
+    }
+  }
+  return putHandler(req, res, pool);
 }

@@ -124,7 +124,12 @@ function validate<T extends TableKey>(table: T, data: unknown, fields: string[])
   const out: Record<string, unknown> = {};
 
   for (const key of Object.keys(obj)) {
-    if (!allowed.has(key)) errors.push(`${key} is not an allowed field`);
+    if (!allowed.has(key)) {
+      if (key in columns) {
+        continue;
+      }
+      errors.push(`${key} is not an allowed field`);
+    }
   }
 
   for (const key of fields) {

@@ -45,7 +45,10 @@ export async function postHandler(
   const notDerivableFields = getNotDerivableFields(tableName);
 
   const valuesToInsert = notDerivableFields.map(
-    (fieldName) => (validated.data as Record<string, unknown>)[fieldName]
+    (fieldName) => {
+      const val = (validated.data as Record<string, unknown>)[fieldName];
+      return val === undefined ? null : val;
+    }
   );
 
   const [fieldNamesTuple, parametersNumbersTuple] =

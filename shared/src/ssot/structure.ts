@@ -1,17 +1,17 @@
 import { TableStructure } from '../types/types';
 
 export const OrderStatus = {
-    PREPARING: "preparing",
-    TRAVELLING: "travelling",
-    DELIVERED: "delivered",
-    FAILED: "failed",
-    CANCELLED: "cancelled",
+  PREPARING: "preparing",
+  TRAVELLING: "travelling",
+  DELIVERED: "delivered",
+  FAILED: "failed",
+  CANCELLED: "cancelled",
 } as const;
 
 export const DriverStatus = {
-    READY: "ready",
-    TRAVELLING: "travelling",
-    BROKEN: "broken",
+  READY: "ready",
+  TRAVELLING: "travelling",
+  BROKEN: "broken",
 } as const;
 
 type LocalizedText = {
@@ -78,7 +78,7 @@ export const structure = {
       columns: {
         license_plate: {
           type: 'string',
-          label: { es: "Patente", en: "License Plate"},
+          label: { es: "Patente", en: "License Plate" },
           readonlyOnEdit: true,
           validator: {
             required: true,
@@ -89,7 +89,7 @@ export const structure = {
         },
         warehouse_name: {
           type: 'string',
-          label: {es: "Almacén", en: "Warehouse"},
+          label: { es: "Almacén", en: "Warehouse" },
           editable: false,
           derivable: {
             originTable: 'warehouses',
@@ -98,7 +98,7 @@ export const structure = {
         },
         address: {
           type: 'string',
-          label: {es: "Dirección de origen", en: "Warehouse's address"},
+          label: { es: "Dirección de origen", en: "Warehouse's address" },
           readonlyOnEdit: true,
           validator: {
             required: true,
@@ -112,7 +112,7 @@ export const structure = {
         },
         availability: {
           type: 'string',
-          label: {es: "Disponibilidad", en: "Availability"},
+          label: { es: "Disponibilidad", en: "Availability" },
           input: 'select',
           validator: {
             nullable: true,
@@ -138,12 +138,12 @@ export const structure = {
         update: ["admin"],
         delete: ["admin"],
       }
-    } satisfies TableStructure ,
+    } satisfies TableStructure,
     stocks: {
       columns: {
         cod_stock: {
           type: 'string',
-          label: {es: "Código", en: "Code"},
+          label: { es: "Código", en: "Code" },
           readonlyOnEdit: true,
           validator: {
             required: true
@@ -151,16 +151,16 @@ export const structure = {
         },
         name: {
           type: 'string',
-          label: {es: "Nombre", en: "Name"},
+          label: { es: "Nombre", en: "Name" },
           validator: {
             required: true
           }
         }
       },
       pk: 'cod_stock',
-      uiName: {es: "Stocks", en: "Stocks"},
-      title: {es: "Stock", en: "Stock"},
-      addButtonLabel: {es: "Añadir Stock", en: "Add Stock"},
+      uiName: { es: "Stocks", en: "Stocks" },
+      title: { es: "Stock", en: "Stock" },
+      addButtonLabel: { es: "Añadir Stock", en: "Add Stock" },
       referencedByCount: ['items'],
       permissions: {
         read: ["admin", "client"],
@@ -168,12 +168,12 @@ export const structure = {
         update: ["admin"],
         delete: ["admin"],
       }
-    } satisfies TableStructure , 
+    } satisfies TableStructure,
     clients: {
       columns: {
         cuit: {
           type: 'string',
-          label: {es: "CUIT", en: "CUIT"},
+          label: { es: "CUIT", en: "CUIT" },
           readonlyOnEdit: true,
           validator: {
             required: true,
@@ -225,9 +225,9 @@ export const structure = {
         },
       },
       pk: "cuit",
-      uiName: {es: "Clientes", en: "Clients"},
-      title: {es: "Cliente", en: "Client"},
-      addButtonLabel: {es: "Añadir Cliente", en: "Add Cliente"},
+      uiName: { es: "Clientes", en: "Clients" },
+      title: { es: "Cliente", en: "Client" },
+      addButtonLabel: { es: "Añadir Cliente", en: "Add Cliente" },
       permissions: {
         read: ["admin"],
         create: ["admin"],
@@ -257,7 +257,7 @@ export const structure = {
         },
         cuit_client: {
           type: 'string',
-          label: {es: 'Cliente', en: 'Client'},
+          label: { es: 'Cliente', en: 'Client' },
           input: 'select',
           readonlyOnEdit: true,
           validator: {
@@ -271,7 +271,7 @@ export const structure = {
         },
         plate_transport: {
           type: 'string',
-          label: {es: 'Transport', en: 'Transport'},
+          label: { es: 'Transport', en: 'Transport' },
           input: 'select',
           validator: {
             required: true,
@@ -281,11 +281,12 @@ export const structure = {
             table: "transports",
             valueField: "license_plate",
             labelField: "license_plate",
-          }
+          },
+          readPermissions: ["admin", "driver"],
         },
         status: {
           type: 'string',
-          label: {es: "Estado", en: "Status"},
+          label: { es: "Estado", en: "Status" },
           input: 'select',
           validator: {
             nullable: true,
@@ -297,16 +298,24 @@ export const structure = {
               label: { es: 'Viajando', en: 'Travelling' },
             },
             { value: OrderStatus.DELIVERED, label: { es: 'Entregado', en: 'Delivered' } },
-            { value: OrderStatus.FAILED, label: {es: 'No Entregado', en: `Couldn't Deliver`}},
+            { value: OrderStatus.FAILED, label: { es: 'No Entregado', en: `Couldn't Deliver` } },
             { value: OrderStatus.CANCELLED, label: { es: 'Cancelado', en: 'Cancelled' } },
           ],
+        },
+        delivered_at_time: {
+          type: 'string',
+          label: { es: 'Fecha de entrega', en: 'Delivery Time' },
+          editable: false,
+          validator: {
+            nullable: true,
+          }
         },
       },
       pk: 'uuid',
       uiName: { es: 'Pedidos', en: 'Orders' },
       title: { es: 'Pedido', en: 'Order' },
       addButtonLabel: { es: 'Agregar Pedido', en: 'Add Order' },
-	  cancelButtonLabel: { es: 'Cancelar Pedido', en: 'Cancel Order' },
+      cancelButtonLabel: { es: 'Cancelar Pedido', en: 'Cancel Order' },
       permissions: {
         read: ["admin", "client", "driver"],
         create: ["admin"], // los clients pueden crear pedidos pero vía la api específica del carrito
@@ -450,14 +459,14 @@ export const structure = {
     //addAdmin: { es: 'Agregar Admin', en: 'Add Admin' },
     added: { es: 'agregado', en: 'added' },
 
-	// Cart
-    cartActions: { es: 'Items en Carrito', en: 'Items in Cart'},
-    totalAvailableStock: {es: "Total Disponible", en: "Total Available"},
+    // Cart
+    cartActions: { es: 'Items en Carrito', en: 'Items in Cart' },
+    totalAvailableStock: { es: "Total Disponible", en: "Total Available" },
 
-  // Driver specific
-    driverActions: {es: "Actualizar Estado", en: "Update Status"},
-    deliverOrder: {es: "Entregado", en: "Delivered"},
-    couldntDeliverOrder: {es: "No se pudo entregar", en: "Couldn't Deliver"},
+    // Driver specific
+    driverActions: { es: "Actualizar Estado", en: "Update Status" },
+    deliverOrder: { es: "Entregado", en: "Delivered" },
+    couldntDeliverOrder: { es: "No se pudo entregar", en: "Couldn't Deliver" },
     markAsCouldntDeliverOrder: {
       es: "¿Está seguro que quier marcar como no entregada a este pedido?",
       en: "Are you sure you want to mark as not delivered this order?"
@@ -504,7 +513,7 @@ export const structure = {
     errorCreatingUser: { es: 'Error creando usuario', en: 'Error creating user' },
     noEditPermission: { es: 'No tenés permiso para editar', en: 'You do not have edit permission' },
     clientAndUserCreated: { es: 'Cliente y usuario creados', en: 'Client and user created' },
-    transportAndUserCreated: {es: 'Transporte y usuario creados', en: 'Transport and user created'},
+    transportAndUserCreated: { es: 'Transporte y usuario creados', en: 'Transport and user created' },
     userAdded: { es: 'Usuario agregado', en: 'User added' },
 
     // Form labels
@@ -531,10 +540,10 @@ export const structure = {
       en: 'Are you sure you want to delete this',
     },
 
-	// Cancel confirmation
-	cancelConfirm: {
-	  es: '¿Está seguro de que desea cancelar',
-	  en: 'Are you sure you want to cancel',
-	}
+    // Cancel confirmation
+    cancelConfirm: {
+      es: '¿Está seguro de que desea cancelar',
+      en: 'Are you sure you want to cancel',
+    }
   } satisfies Record<string, LocalizedText>,
 };

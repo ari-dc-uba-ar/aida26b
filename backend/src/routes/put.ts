@@ -68,7 +68,10 @@ export async function putHandler(
   }
 
   const newValues = fieldsToUpdate.map(
-    (fieldName) => (validatedBody.data as Record<string, unknown>)[fieldName]
+    (fieldName) => {
+      const val = (validatedBody.data as Record<string, unknown>)[fieldName];
+      return val === undefined ? null : val;
+    }
   );
 
   const setArgumentsString = columnNamesEqualsNumber(
