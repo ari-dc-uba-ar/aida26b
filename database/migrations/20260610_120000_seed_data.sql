@@ -27,7 +27,7 @@ INSERT INTO transports VALUES
 ('AA123BB', 'Av. Corrientes 1000', 'ready'),
 ('AB456CD', 'Av. Corrientes 1000', 'travelling'),
 ('AC789EF', 'Ruta 8 Km 45', 'ready'),
-('AD111GH', 'Ruta 8 Km 45', 'MAINTENANCE'),
+('AD111GH', 'Ruta 8 Km 45', 'broken'),
 ('AE222IJ', 'Parque Industrial Sur', 'ready');
 
 -- ==========================
