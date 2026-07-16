@@ -50,7 +50,8 @@ clients, pero quizás es over-engineering para nuestro sistema
 - El JOIN para ver la cantidad de items es bastante genérico, pero sólo funciona si en el structure del single source of truth
 la tabla de la que partimos NO tiene nada en su referencedRelations. Si hay un referencedRelations no nulo, ignora lo de contar
 la cantidad de referencias en otras tablas. Podría verse de hacer que puedan andar ambas a la vez.
-- las funciones de tipo window.fun() que se usan en app.ts para actualizar el estado de los pedidos son mega redundantes.
+- ~las funciones de tipo window.fun() que se usan en app.ts para actualizar el estado de los pedidos son mega redundantes.~
+- Muchas de las funciones de tipo window.fun() nuestra usan funciones que están ahí tiradas en el app.ts, habría que llevarlas a algún dir específico.
 - ~toda la lógica de actualización de estado de los drivers habría que llevarla a un endpoint específico sobre el que ellos puedan hacer POST, ahora mismo, a mano, hacen un PUT a la API genérica de transports (no deberían, eso en principio permite modificar a otros drivers también)~
 - ~En muchos lugares se hardcodea el status de los drivers y las órdenes con el string pelado, convendría encapsular eso en una variable o tipo particular para, si decimos agregar estados o algo, no tener que hacer validaciones por doquier (o no comernos la cabeza debuggeando si escribimos mal un string)~
 
