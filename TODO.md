@@ -64,6 +64,7 @@ la cantidad de referencias en otras tablas. Podría verse de hacer que puedan an
 - En orders se ve fea en general la UI para los drivers
 - En la tabla de orders el status de la misma aparece hardcoadeado con su value `deliver | travelling | failed | cancelled` y no con el label corrspondiente
 - Al cambiar el lenguaje de la aplicación, el botón de drivers fallbackea al texto default (VER `applyStaticLanguageToUI()`) 
+- En el form de editar clients, sale el username y la password (NO DEBERIA)
 
 ## Edgecases a considerar (¿Qué hacemos en estos casos?)
 
