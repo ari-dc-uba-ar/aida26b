@@ -390,7 +390,7 @@ app.post('/api/auth/change-password', requireAuth, async (req, res) => {
          must_change_password = false,
          updated_at = now()
        WHERE id = $3
-       RETURNING id, username, email, role, is_active, must_change_password`,
+       RETURNING id, username, email, role, client_cuit, transport_license, is_active, must_change_password`,
       [passwordHash, passwordSalt, user.id]
     );
 
