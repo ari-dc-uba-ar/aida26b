@@ -589,6 +589,8 @@ async function createEntityWithUser<K extends TableKey>(tableKey: K, req: Reques
 
 }
 
+// API routes de negocio
+
 app.post(
   '/api/cart/checkout',
   requireAuth,
