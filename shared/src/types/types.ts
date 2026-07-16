@@ -60,6 +60,7 @@ type ColumnDef = {
   nullable?: boolean;
   derivable?: { originTable: string, sqlGenerationStatement: string };
   foreignKey?: ForeignKeyDef;
+  readPermissions?: Role[];
 }
 
 type Permissions = {

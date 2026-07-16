@@ -471,7 +471,14 @@ function syncStateToUrl(): void {
 
 function syncUrlToState(): void {
   const params = new URLSearchParams(window.location.search);
-  const table = params.get('table') as TableKey | null;
+  let table = params.get('table') as TableKey | null;
+
+  if (currentUser) {
+    const readable = getReadableTableKeys(tableKeys, currentUser.role);
+    if (!table || !structure.tables[table] || !readable.includes(table)) {
+      table = readable[0];
+    }
+  }
 
   if (table && structure.tables[table]) {
     activeTableKey = table;
@@ -906,6 +913,9 @@ function renderAnyTable<K extends TableKey>(
 
   // Encabezados de datos
   Object.entries(tableStructure.columns).forEach(([fieldName, column]) => {
+    if (column.readPermissions && !column.readPermissions.includes(currentUser!.role)) {
+      return;
+    }
     const th = document.createElement('th');
     th.textContent = getLocalizedText(column.label as LocalizedText | string) || fieldName;
     th.className = 'sortable';
@@ -954,6 +964,13 @@ function renderAnyTable<K extends TableKey>(
     headerRow.appendChild(actionsHeader);
   }
 
+  const showClientCancelActions = tableKey === 'orders' && currentUser!.role === 'client';
+  if (showClientCancelActions) {
+    const cancelHeader = document.createElement('th');
+    cancelHeader.textContent = getLocalizedText(tableStructure.cancelButtonLabel || structure.commonText.actions);
+    headerRow.appendChild(cancelHeader);
+  }
+
   thead.appendChild(headerRow);
 
   // Cuerpo de la tabla
@@ -969,8 +986,18 @@ function renderAnyTable<K extends TableKey>(
 
     // Celdas de datos
     columnNames.forEach((name) => {
+      const column = tableStructure.columns[name];
+      if (column.readPermissions && !column.readPermissions.includes(currentUser!.role)) {
+        return;
+      }
       const td = document.createElement('td');
-      td.textContent = String(record[name] ?? '');
+      const val = record[name];
+      if (column && column.options && val !== undefined && val !== null) {
+        const option = column.options.find(opt => opt.value === val);
+        td.textContent = option ? getLocalizedText(option.label) : String(val);
+      } else {
+        td.textContent = String(val ?? '');
+      }
       row.appendChild(td);
     });
 
@@ -1082,7 +1109,8 @@ function renderAnyTable<K extends TableKey>(
         driverActionsTd.appendChild(couldntDeliverBtn);   
       } else {
         const placeholderSpan = document.createElement("span");
-        placeholderSpan.textContent = getLocalizedText(structure.commonText.notUpdatableField);
+        placeholderSpan.textContent = "-";
+        placeholderSpan.className = "text-muted";
         driverActionsTd.appendChild(placeholderSpan);
       }
 
@@ -1976,6 +2004,7 @@ async function showAnyForm<K extends TableKey>(
   const fields = await Promise.all(
     Object.entries(tableConfig.columns)
       .filter(([, column]) => column.editable !== false)
+      .filter(([, column]) => !column.readPermissions || column.readPermissions.includes(currentUser!.role))
       .map(([fieldName, column]) =>
         renderFormField(
           tableKey,
