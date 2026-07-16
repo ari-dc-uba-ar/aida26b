@@ -45,6 +45,8 @@ type ForeignKeyDef = {
   };
 };
 
+type StockWithTotal = TableRecordMap['stocks'] & { items_total_available: number};
+
 type Language = 'es' | 'en';
 type LocalizedText = Record<Language, string>;
 
@@ -128,4 +130,4 @@ type FormDataMap = Record<TableKey, any> & {
 };
 
 
-export type { FormDataMap, Role, TypeMap, MyTypeNames, ColumnValidator, ColumnDef, TableStructure, InferType, TableKey, TableRecordMap, Response, ForeignKeyDef, Language, LocalizedText, RendererProps, RendererFunc };
+export type { StockWithTotal, FormDataMap, Role, TypeMap, MyTypeNames, ColumnValidator, ColumnDef, TableStructure, InferType, TableKey, TableRecordMap, Response, ForeignKeyDef, Language, LocalizedText, RendererProps, RendererFunc };

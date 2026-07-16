@@ -13,6 +13,7 @@ import {
   RendererFunc,
   Response as ApiResponse,
   Role,
+  StockWithTotal,
 } from '@shared/types/types';
 import { getPkFields } from '@shared/utils/utils';
 import { validateField } from '@shared/validation/validate';
@@ -898,6 +899,200 @@ function createActionButton(
   return button;
 }
 
+// crud genérico
+function createAdminActions<K extends TableKey>(
+  tableKey: K,
+  pkValues: string[],
+): HTMLTableCellElement | null {
+
+  if (!canWriteAcademic())
+    return null;
+
+  const td = document.createElement("td");
+  td.className = "actions";
+
+  td.append(
+    createActionButton(
+      "edit-btn",
+      getLocalizedText(structure.commonText.edit),
+      () => window.editRecord(tableKey, ...pkValues)
+    )
+  );
+
+  td.append(
+    createActionButton(
+      "delete-btn",
+      getLocalizedText(structure.commonText.delete),
+      () => window.deleteRecord(tableKey, ...pkValues)
+    )
+  );
+
+  return td;
+}
+
+// los buttons para entregar o marcar como que no se pudo entregar un pedido
+function createDriverActions(
+    record: TableRecordMap["orders"],
+    pkValues: string[],
+): HTMLTableCellElement | null {
+
+    if (currentUser?.role !== "driver")
+        return null;
+
+
+    const td = document.createElement("td");
+    td.className = "actions";
+
+    if (record.status !== OrderStatus.TRAVELLING) {
+      td.textContent = getLocalizedText(structure.commonText.notUpdatableField);
+      return td;
+    }
+
+    td.append(
+        createActionButton(
+            "deliver-btn",
+            getLocalizedText(structure.commonText.deliverOrder),
+            () => window.deliverOrder(pkValues),
+        )
+    );
+
+    td.append(
+        createActionButton(
+            "couldnt-deliver-btn",
+            getLocalizedText(structure.commonText.couldntDeliverOrder),
+            () => window.couldntDeliverOrder(pkValues),
+        )
+    );
+
+    return td;
+}
+
+// cancelar pedidos en preparación
+function createClientActions(
+  tableStructure: TableStructure,
+  record: TableRecordMap["orders"],
+  pkValues: string[],
+): HTMLTableCellElement | null {
+
+  if (currentUser?.role !== "client")
+    return null;
+
+  if (record.status !== OrderStatus.PREPARING)
+    return null;
+
+  const td = document.createElement("td");
+  td.className = "actions";
+
+  td.append(
+    createActionButton(
+      "delete-btn",
+      getLocalizedText(
+        tableStructure.cancelButtonLabel ??
+        structure.commonText.cancel
+      ),
+      () => window.cancelOrder(pkValues)
+    )
+  );
+
+  return td;
+}
+
+// meter cosas al carrito
+function createCartActions(
+  record: StockWithTotal,
+): HTMLTableCellElement[] {
+
+  const productId = String(record.cod_stock);
+  const productName = String(record.name);
+
+  const cartItem = cart.getItems().find(item => item.id === productId);
+  const currentQty = cartItem?.quantity ?? 0;
+
+  const cartTd = document.createElement("td");
+  const availableTd = document.createElement("td");
+
+  const controlDiv = document.createElement("div");
+  controlDiv.className = "cart-quantity-control";
+
+  const qtySpan = document.createElement("span");
+  qtySpan.className = "qty-value";
+  qtySpan.textContent = String(currentQty);
+
+  const decBtn = createActionButton(
+    "qty-btn",
+    "-",
+    () => {
+      cart.removeOneItem(productId);
+      loadTableData(activeTableKey);
+    },
+  );
+
+  decBtn.disabled = currentQty === 0;
+
+  const incBtn = createActionButton(
+    "qty-btn",
+    "+",
+    () => {
+      cart.addItem({
+        id: productId,
+        name: productName,
+      });
+
+      loadTableData(activeTableKey);
+    },
+  );
+
+  controlDiv.append(decBtn, qtySpan, incBtn);
+
+  cartTd.append(controlDiv);
+
+  availableTd.textContent =
+    String(record.items_total_available);
+
+  return [cartTd, availableTd];
+}
+
+// en base a qué tabla es, la data que tiene su record asociado y mis permisos, crea las celdas de buttons de interacción que NO SON del cart
+function createRowActions<K extends TableKey>(
+  tableKey: K,
+  tableStructure: TableStructure,
+  record: TableRecordMap[K],
+  pkValues: string[],
+): HTMLTableCellElement[] {
+
+  const cells: HTMLTableCellElement[] = [];
+
+  // órdenes (buttons de driver y clients)
+  if (tableKey === "orders") {
+
+    const order = record as TableRecordMap["orders"];
+
+    const driverCell = createDriverActions(order, pkValues);
+    if (driverCell) {
+      cells.push(driverCell);
+    }
+
+    const clientCell = createClientActions(tableStructure, order, pkValues,);
+
+    if (clientCell) {
+      cells.push(clientCell);
+    }
+
+  }
+
+  // el CRUD genérico para admins
+  const adminCell = createAdminActions(
+    tableKey,
+    pkValues,
+  );
+
+  if (adminCell) {
+    cells.push(adminCell);
+  }
+
+  return cells;
+}
+
 function renderAnyTable<K extends TableKey>(
   tableKey: K,
   records: TableRecordMap[K][]
@@ -983,156 +1178,27 @@ function renderAnyTable<K extends TableKey>(
       row.appendChild(td);
     });
 
-    // Celdas del carrito y quantity para stocks
-    if (isStocksTable) {
-      type StockWithTotal = TableRecordMap['stocks'] & {
-        items_total_available: number; // O el tipo de dato que corresponda (ej. string si viene de un SUM de Postgres)
-      };
+    // celdas del carrito y quantity para stocks
+    if (tableKey === "stocks") {
 
-      // el 'as unknown' es para que no se ponga la gorra el compilador (lo dice el warning si lo quitamos), porque estamos convirtiendo un tipo genérico en algo re específico
-      // y asume que nos estamos equivocando 
       const stockRecord = record as unknown as StockWithTotal;
-      const cartTd = document.createElement('td');
-      const productId = String(stockRecord.cod_stock);
-      const productName = String(stockRecord.name);
+      const cells = createCartActions(stockRecord);
+      cells.forEach(cell => row.appendChild(cell));
 
-      const cartItem = cart.getItems().find(item => item.id === productId);
-      const currentQty = cartItem ? cartItem.quantity : 0;
-      // Contenedor del control
-      const controlDiv = document.createElement('div');
-      controlDiv.className = 'cart-quantity-control';
-
-      const qtySpan = document.createElement('span');
-      qtySpan.textContent = String(currentQty);
-      qtySpan.className = 'qty-value';
-
-      const availableQtyTd = document.createElement('td');
-      const availableQtySpan = document.createElement('span');
-      availableQtySpan.textContent = String(stockRecord.items_total_available);
-
-
-      // Boton - 
-      const decBtn = createActionButton(
-        "qty-btn",
-        "-",
-        () => {
-          if (currentQty > 0) {
-            cart.removeOneItem(productId);
-            loadTableData(activeTableKey);
-          }
-        }
-      )
-
-      decBtn.disabled = currentQty === 0;
-      
-      // Botón +
-      const incBtn = createActionButton(
-        "qty-btn",
-        "+",
-        () => {
-          // TODO, validar si hay stock mandando una request al API de backend. Quizas sea buena idea delegar la responsabilidad de hacer cart.addItem
-          cart.addItem({ id: productId, name: productName });
-          loadTableData(activeTableKey);
-        }
-      )
-
-      controlDiv.appendChild(decBtn);
-      controlDiv.appendChild(qtySpan);
-      controlDiv.appendChild(incBtn);
-      cartTd.appendChild(controlDiv);
-      availableQtyTd.appendChild(availableQtySpan);
-      row.appendChild(cartTd);
-      row.appendChild(availableQtyTd);
     }
 
+    const pkValues = pkFields.map(field =>
+      String(record[field as keyof TableRecordMap[K]] ?? "")
+    );
 
-    // acciones del driver sobre los pedidos
-    if (showOrdersStatusActions) {
-      const driverActionsTd = document.createElement('td');
-      driverActionsTd.className = 'actions';
-
-      const pkValues = pkFields.map((field) =>
-        String(record[field as keyof TableRecordMap[K]] ?? '')
-      );
-
-      const isTravelling = String((record as TableRecordMap["orders"]).status) == OrderStatus.TRAVELLING;
-
-      // sólo le dejamos updatear los pedidos que están viajando
-      if (isTravelling) {
-        
-        const deliverBtn = createActionButton(
-          "deliver-btn",
-          getLocalizedText(structure.commonText.deliverOrder),
-          () => window.deliverOrder(pkValues),
-        );
-        
-        const couldntDeliverBtn = createActionButton(
-          "couldnt-deliver-btn",
-          getLocalizedText(structure.commonText.couldntDeliverOrder),
-          () => window.couldntDeliverOrder(pkValues)
-        );
-        
-        driverActionsTd.appendChild(deliverBtn);
-        driverActionsTd.appendChild(couldntDeliverBtn);   
-      } else {
-        const placeholderSpan = document.createElement("span");
-        placeholderSpan.textContent = getLocalizedText(structure.commonText.notUpdatableField);
-        driverActionsTd.appendChild(placeholderSpan);
-      }
-
-      row.appendChild(driverActionsTd);
-    }
- 
-    // que un client pueda cancelar pedidos
-    if (tableKey == "orders" && currentUser!.role == "client") {
-      
-      const cancelTd = document.createElement('td');
-      cancelTd.className = 'actions';
-      
-      const orderIsPreparing = (record as any).status === OrderStatus.PREPARING;
-
-      if (orderIsPreparing) {
-        
-        const pkValues = pkFields.map((field) =>
-          String(record[field as keyof TableRecordMap[K]] ?? '')
-        );
-
-        const cancelBtn = createActionButton(
-          "delete-btn",
-          getLocalizedText(tableStructure.cancelButtonLabel || structure.commonText.cancel),
-          () => window.cancelOrder(pkValues)
-        )
-
-        cancelTd.appendChild(cancelBtn);
-      }
-
-      row.appendChild(cancelTd);
-    }
-
-    // Acciones de admin (editar/eliminar)
-    if (showActions) {
-      const actionsTd = document.createElement('td');
-      actionsTd.className = 'actions';
-
-      const pkValues = pkFields.map((field) =>
-        String(record[field as keyof TableRecordMap[K]] ?? '')
-      );
-
-      const editBtn = createActionButton(
-        "edit-btn",
-        getLocalizedText(structure.commonText.edit),
-        () => {window.editRecord(tableKey, ...pkValues)}
-      )
-
-      const deleteBtn = createActionButton(
-        "delete-btn",
-        getLocalizedText(structure.commonText.delete),
-        () => {window.deleteRecord(tableKey, ...pkValues)}
-      )
-
-      actionsTd.appendChild(editBtn);
-      actionsTd.appendChild(deleteBtn);
-      row.appendChild(actionsTd);
+    // celdas para las aciones que tiene permitido este rol sobre esta tabla y valores
+    for (const cell of createRowActions(
+      tableKey,
+      tableStructure,
+      record,
+      pkValues,
+    )) {
+      row.appendChild(cell);
     }
 
     tbody.appendChild(row);
