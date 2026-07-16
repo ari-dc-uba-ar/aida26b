@@ -882,6 +882,23 @@ paginationContainer.style.gap = '10px';
 paginationContainer.style.alignItems = 'center';
 sharedTable.parentNode?.insertBefore(paginationContainer, sharedTable.nextSibling);
 
+
+function createActionButton<T>(
+  className: string,
+  label: string,
+  payload: T, // en general, será un string[] de primary keys, pero para cosas como los buttons de inc y dec es un productId pelado o un JSON
+  handler: (payload: T) => void
+): HTMLButtonElement {
+  const button = document.createElement("button");
+
+  button.className = className;
+  button.textContent = label;
+
+  button.addEventListener("click", () => handler(payload));
+
+  return button;
+}
+
 function renderAnyTable<K extends TableKey>(
   tableKey: K,
   records: TableRecordMap[K][]
@@ -996,25 +1013,31 @@ function renderAnyTable<K extends TableKey>(
 
 
       // Boton - 
-      const decBtn = document.createElement('button');
-      decBtn.textContent = '−';
-      decBtn.className = 'qty-btn';
+      const decBtn = createActionButton(
+        "qty-btn",
+        "-",
+        productId,
+        (id) => {
+          if (currentQty > 0) {
+            cart.removeOneItem(id);
+            loadTableData(activeTableKey);
+          }
+        }
+      )
+
       decBtn.disabled = currentQty === 0;
-      decBtn.addEventListener('click', () => {
-        if (currentQty > 0) {
-          cart.removeOneItem(productId);
+      
+      // Botón +
+      const incBtn = createActionButton(
+        "qty-btn",
+        "+",
+        { id: productId, name: productName },
+        (item) => {
+          // TODO, validar si hay stock mandando una request al API de backend. Quizas sea buena idea delegar la responsabilidad de hacer cart.addItem
+          cart.addItem(item);
           loadTableData(activeTableKey);
         }
-      });
-      // Botón +
-      const incBtn = document.createElement('button');
-      incBtn.textContent = '+';
-      incBtn.className = 'qty-btn';
-      incBtn.addEventListener('click', () => {
-        // TODO, validar si hay stock mandando una request al API de backend. Quizas sea buena idea delegar la responsabilidad de hacer cart.addItem
-        cart.addItem({ id: productId, name: productName });
-        loadTableData(activeTableKey);
-      });
+      )
 
       controlDiv.appendChild(decBtn);
       controlDiv.appendChild(qtySpan);
@@ -1039,36 +1062,21 @@ function renderAnyTable<K extends TableKey>(
 
       // sólo le dejamos updatear los pedidos que están viajando
       if (isTravelling) {
-        const deliverBtn = document.createElement('button');
-        deliverBtn.className = 'delivered-btn';
-        deliverBtn.textContent = getLocalizedText(structure.commonText.deliverOrder);
-        deliverBtn.dataset.pk = JSON.stringify(pkValues);
-        deliverBtn.addEventListener('click', (event) => {
-
-          //LOGICA PARA PEDIRLE AL DRIVER QUE INGRESE EL CUIT DEL CLIENT
-          const values = JSON.parse(
-            (event.currentTarget as HTMLElement).dataset.pk || '[]'
-          );
-
-          window.deliverOrder(values);
-
-        });
-
-        const couldntDeliverBtn = document.createElement('button');
-        couldntDeliverBtn.className = 'couldnt-deliver-btn';
-        couldntDeliverBtn.textContent = getLocalizedText(structure.commonText.couldntDeliverOrder);
-        couldntDeliverBtn.dataset.pk = JSON.stringify(pkValues);
-        couldntDeliverBtn.addEventListener('click', (event) => {
-
-          // LOGICA PARA HACER UNA WINDOW DE CONFIRMACIÓN DE QUE NO SE PUDO ENTREGAR EL PEDIDO
-          const values = JSON.parse(
-            (event.currentTarget as HTMLElement).dataset.pk || '[]'
-          );
-
-          window.couldntDeliverOrder(values);
-
-        });
-
+        
+        const deliverBtn = createActionButton(
+          "deliver-btn",
+          getLocalizedText(structure.commonText.deliverOrder),
+          pkValues,
+          window.deliverOrder,
+        );
+        
+        const couldntDeliverBtn = createActionButton(
+          "couldnt-deliver-btn",
+          getLocalizedText(structure.commonText.couldntDeliverOrder),
+          pkValues,
+          window.couldntDeliverOrder
+        );
+        
         driverActionsTd.appendChild(deliverBtn);
         driverActionsTd.appendChild(couldntDeliverBtn);   
       } else {
@@ -1080,7 +1088,7 @@ function renderAnyTable<K extends TableKey>(
       row.appendChild(driverActionsTd);
     }
  
-    // que un client pueda eliminar pedidos
+    // que un client pueda cancelar pedidos
     if (tableKey == "orders" && currentUser!.role == "client") {
       
       const cancelTd = document.createElement('td');
@@ -1089,20 +1097,17 @@ function renderAnyTable<K extends TableKey>(
       const orderIsPreparing = (record as any).status === OrderStatus.PREPARING;
 
       if (orderIsPreparing) {
+        
         const pkValues = pkFields.map((field) =>
           String(record[field as keyof TableRecordMap[K]] ?? '')
         );
 
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'delete-btn';
-        cancelBtn.textContent = getLocalizedText(tableStructure.cancelButtonLabel || structure.commonText.cancel);
-        cancelBtn.dataset.pk = JSON.stringify(pkValues);
-        cancelBtn.addEventListener('click', (event) => {
-          const values = JSON.parse(
-            (event.currentTarget as HTMLElement).dataset.pk || '[]'
-          );
-          window.cancelOrder(values);
-        });
+        const cancelBtn = createActionButton(
+          "delete-btn",
+          getLocalizedText(tableStructure.cancelButtonLabel || structure.commonText.cancel),
+          pkValues,
+          window.cancelOrder
+        )
 
         cancelTd.appendChild(cancelBtn);
       }
@@ -1119,27 +1124,19 @@ function renderAnyTable<K extends TableKey>(
         String(record[field as keyof TableRecordMap[K]] ?? '')
       );
 
-      const editBtn = document.createElement('button');
-      editBtn.className = 'edit-btn';
-      editBtn.textContent = getLocalizedText(structure.commonText.edit);
-      editBtn.dataset.pk = JSON.stringify(pkValues);
-      editBtn.addEventListener('click', (event) => {
-        const values = JSON.parse(
-          (event.currentTarget as HTMLElement).dataset.pk || '[]'
-        );
-        window.editRecord(tableKey, ...values);
-      });
+      const editBtn = createActionButton(
+        "edit-btn",
+        getLocalizedText(structure.commonText.edit),
+        pkValues,
+        (values) => {window.editRecord(tableKey, ...values)}
+      )
 
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'delete-btn';
-      deleteBtn.textContent = getLocalizedText(structure.commonText.delete);
-      deleteBtn.dataset.pk = JSON.stringify(pkValues);
-      deleteBtn.addEventListener('click', (event) => {
-        const values = JSON.parse(
-          (event.currentTarget as HTMLElement).dataset.pk || '[]'
-        );
-        window.deleteRecord(tableKey, ...values);
-      });
+      const deleteBtn = createActionButton(
+        "delete-btn",
+        getLocalizedText(structure.commonText.delete),
+        pkValues,
+        (values) => {window.deleteRecord(tableKey, ...values)}
+      )
 
       actionsTd.appendChild(editBtn);
       actionsTd.appendChild(deleteBtn);
