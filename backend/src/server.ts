@@ -655,12 +655,12 @@ async function updateDriverStatusHandler(
       await pool.query(
         `
           UPDATE orders
-          SET status = 'travelling'
+          SET status = $1
           WHERE
-            plate_transport = $1
-            AND status = 'preparing'
+            status = $2
+            AND plate_transport = $3
           `,
-        [license_plate]
+        [OrderStatus.TRAVELLING, OrderStatus.PREPARING, license_plate]
       );
     }
 
@@ -673,12 +673,12 @@ async function updateDriverStatusHandler(
       await pool.query(
         `
           UPDATE orders
-          SET status = 'failed'
+          SET status = $1
           WHERE
-            plate_transport = $1
-            AND status = 'travelling'
+            status = $2
+            AND plate_transport = $3
           `,
-        [license_plate]
+        [OrderStatus.FAILED, OrderStatus.TRAVELLING, license_plate]
       );
     }
 

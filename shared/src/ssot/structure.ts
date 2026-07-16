@@ -1,5 +1,19 @@
 import { TableStructure } from '../types/types';
 
+export const OrderStatus = {
+    PREPARING: "preparing",
+    TRAVELLING: "travelling",
+    DELIVERED: "delivered",
+    FAILED: "failed",
+    CANCELLED: "cancelled",
+} as const;
+
+export const DriverStatus = {
+    READY: "ready",
+    TRAVELLING: "travelling",
+    BROKEN: "broken",
+} as const;
+
 type LocalizedText = {
   es: string;
   en: string;
@@ -104,12 +118,12 @@ export const structure = {
             nullable: true,
           },
           options: [
-            { value: 'ready', label: { es: 'Listo', en: 'Ready to Go' } },
+            { value: DriverStatus.READY, label: { es: 'Listo', en: 'Ready to Go' } },
             {
-              value: 'travelling',
+              value: DriverStatus.TRAVELLING,
               label: { es: 'Viajando', en: 'Travelling' },
             },
-            { value: 'broken', label: { es: 'Roto', en: 'Broken' } },
+            { value: DriverStatus.BROKEN, label: { es: 'Roto', en: 'Broken' } },
           ],
         }
       },
@@ -277,14 +291,14 @@ export const structure = {
             nullable: true,
           },
           options: [
-            { value: 'preparing', label: { es: 'Preparando', en: 'Preparing' } },
+            { value: OrderStatus.PREPARING, label: { es: 'Preparando', en: 'Preparing' } },
             {
-              value: 'travelling',
+              value: OrderStatus.TRAVELLING,
               label: { es: 'Viajando', en: 'Travelling' },
             },
-            { value: 'delivered', label: { es: 'Entregado', en: 'Delivered' } },
-            { value: `failed`, label: {es: 'No Entregado', en: `Couldn't Deliver`}},
-            { value: 'cancelled', label: { es: 'Cancelado', en: 'Cancelled' } },
+            { value: OrderStatus.DELIVERED, label: { es: 'Entregado', en: 'Delivered' } },
+            { value: OrderStatus.FAILED, label: {es: 'No Entregado', en: `Couldn't Deliver`}},
+            { value: OrderStatus.CANCELLED, label: { es: 'Cancelado', en: 'Cancelled' } },
           ],
         },
       },

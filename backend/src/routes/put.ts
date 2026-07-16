@@ -1,7 +1,7 @@
 import express from 'express';
 import type { Pool, PoolClient } from 'pg';
 
-import { structure } from '../../../shared/src/ssot/structure';
+import { OrderStatus, structure } from '../../../shared/src/ssot/structure';
 import type { TableKey, Response } from '../../../shared/src/types/types';
 import { getPkFields } from '../../../shared/src/utils/utils';
 
@@ -79,22 +79,24 @@ export async function putHandler(
 
       const record = selectResult.rows[0];
 
-      if (tableName === 'orders' && record.status !== 'preparing') {
+      if (tableName === 'orders' && record.status !== OrderStatus.PREPARING) {
         await pool.query('ROLLBACK');
         return res.status(400).json({
           success: false,
-          message: `Only orders in 'preparing' status can be cancelled`,
+          message: `Only orders in '${OrderStatus.PREPARING}' status can be cancelled`,
         });
       }
 
       if (tableName === 'orders') {
         const updateOrderQuery = `
           UPDATE orders
-          SET status = 'cancelled'
-          WHERE uuid = $1
+          SET status = $1
+          WHERE uuid = $2
           RETURNING *
         `;
-        const orderResult = await pool.query(updateOrderQuery, [record.uuid]);
+        const orderResult = await pool.query(
+          updateOrderQuery, 
+          [OrderStatus.CANCELLED, record.uuid]);
 
         const updateItemsQuery = `
           UPDATE items
@@ -109,7 +111,7 @@ export async function putHandler(
           res,
           entityName,
           orderResult.rows[0],
-          'cancelled',
+          OrderStatus.CANCELLED,
           202
         );
       } else {

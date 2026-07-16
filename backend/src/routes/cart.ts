@@ -20,6 +20,7 @@ import {
   validateCheckoutRequest,
   type CheckoutItem,
 } from '../../../shared/src/validation/checkout';
+import { DriverStatus, OrderStatus } from '../../../shared/src/ssot/structure';
 
 type AuthedRequest = Request & { user?: AuthUser; dbClient?: PoolClient };
 
@@ -32,9 +33,10 @@ async function getRandomTransport(client: PoolClient): Promise<string> {
     `SELECT license_plate
      FROM transports
      WHERE availability IS NULL
-        OR availability IN ('ready', 'AVAILABLE')
+        OR availability = $1
      ORDER BY random()
      LIMIT 1`,
+     [DriverStatus.READY]
   );
 
   if (result.rows.length === 0) {
@@ -167,7 +169,7 @@ export async function checkoutHandler(req: AuthedRequest, res: Response) {
       order_date: orderDate,
       cuit_client: clientCUIT,
       plate_transport,
-      status: 'preparing',
+      status: OrderStatus.PREPARING,
     });
 
     if (!insertResult.success) {

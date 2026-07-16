@@ -1,6 +1,6 @@
 // Main application file
 // Code and comments in English
-import { structure } from '@shared/ssot/structure';
+import { DriverStatus, OrderStatus, structure } from '@shared/ssot/structure';
 import {
   Language,
   LocalizedText,
@@ -769,7 +769,7 @@ async function getTransport(licensePlate: string): Promise<TableRecordMap["trans
 }
 
 function getDriverStatusBtnText(driverStatus: string): string {
-  return driverStatus === "ready"
+  return driverStatus === DriverStatus.READY
       ? `${getLocalizedText(structure.commonText.startTravelling)}`
       : `${getLocalizedText(structure.commonText.stopTravelling)}`;
 }
@@ -1035,8 +1035,10 @@ function renderAnyTable<K extends TableKey>(
         String(record[field as keyof TableRecordMap[K]] ?? '')
       );
 
+      const isTravelling = String((record as TableRecordMap["orders"]).status) == OrderStatus.TRAVELLING;
+
       // sólo le dejamos updatear los pedidos que están viajando
-      if (String((record as TableRecordMap["orders"]).status) == 'travelling') {
+      if (isTravelling) {
         const deliverBtn = document.createElement('button');
         deliverBtn.className = 'delivered-btn';
         deliverBtn.textContent = getLocalizedText(structure.commonText.deliverOrder);
@@ -1080,10 +1082,13 @@ function renderAnyTable<K extends TableKey>(
  
     // que un client pueda eliminar pedidos
     if (tableKey == "orders" && currentUser!.role == "client") {
+      
       const cancelTd = document.createElement('td');
       cancelTd.className = 'actions';
+      
+      const orderIsPreparing = (record as any).status === OrderStatus.PREPARING;
 
-      if ((record as any).status === 'preparing') {
+      if (orderIsPreparing) {
         const pkValues = pkFields.map((field) =>
           String(record[field as keyof TableRecordMap[K]] ?? '')
         );
@@ -2025,6 +2030,9 @@ async function showAnyForm<K extends TableKey>(
   setupDependentSelects(tableKey, record);
 
   form.addEventListener('submit', async (event) => {
+
+    const apiMethod = isEdit ? 'PUT' : 'POST';
+
     event.preventDefault();
 
     if (!validateForm(tableKey)) return;
@@ -2036,11 +2044,12 @@ async function showAnyForm<K extends TableKey>(
       payload.username = (document.getElementById(`${tableKey}-username`) as HTMLInputElement).value;
     }
 
-    if (tableKey === 'clients') {
+    // agregamos estos ANDs porque se supone que el role sólo se envía al crear al client/driver, no al hacer un PUT para editarlo
+    if (tableKey === 'clients' && apiMethod == 'POST') {
       payload.role = "client"
     }
 
-    if (tableKey === "transports") {
+    if (tableKey === "transports" && apiMethod == 'POST') {
       payload.role = "driver"
     }
 
@@ -2248,7 +2257,7 @@ window.couldntDeliverOrder = async (
     const record = responseAnswer.data as TableRecordMap["orders"];
 
     // modificar únicamente el estado
-    record.status = "failed";
+    record.status = OrderStatus.FAILED;
 
     // PUT
     const updateResponse = await apiFetch(`/${tableKey}?${queryParams}`, {
@@ -2329,7 +2338,7 @@ window.deliverOrder = async (
     }
 
     // marcamos como entregado
-    record.status = "delivered";
+    record.status = OrderStatus.DELIVERED;
 
     const updateResponse = await apiFetch(`/${tableKey}?${queryParams}`, {
       method: "PUT",
@@ -2521,9 +2530,9 @@ changeDriverStatusBtn.addEventListener('click', async () => {
   
   // veoms el sig status
   const nextStatus =
-    transport.availability === "ready"
-      ? "travelling"
-      : "ready";
+    transport.availability === DriverStatus.READY
+      ? DriverStatus.TRAVELLING
+      : DriverStatus.READY;
 
   // updateamos
   await updateDriverStatus(transport, nextStatus);
