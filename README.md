@@ -154,13 +154,13 @@ docker-compose -f docker-compose.combined.yml up --build
 
 desde el directorio raíz.
 
-Tanto el back como el frontend se pueden acceder en `http://localhost:3000` y la base de datos en el puerto `localhost:5432`.
-
 La inicialización crea:
 
 - base de datos
 - un usuario `admin`
 - backend
 - frontend
+
+Tanto el back como el frontend se pueden acceder en `http://localhost:3000` y la base de datos en el puerto `localhost:5432`.
 
 Las migraciones se aplican automáticamente durante el arranque.
