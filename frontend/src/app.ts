@@ -561,7 +561,6 @@ function updateNavButtonsText(): void {
 
 function getReadableTableKeys(tableKeys: TableKey[], role: Role) {
   return tableKeys.filter(tableKey => {
-    if (role === 'driver' && tableKey === 'transports') return false;
     return (structure.tables[tableKey].permissions.read as readonly Role[]).includes(role);
   });
 }

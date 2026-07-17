@@ -202,18 +202,6 @@ const requireAcademicRead: RequestHandler = async (req, res, next) => {
     return next();
   }
 
-  // Si un chofer quiere leer transportes, solo permitimos si filtra por su propia patente
-  if (role === 'driver' && tableName === 'transports') {
-    if (user?.transport_license && req.query.license_plate === user.transport_license) {
-      return next();
-    }
-    await audit(req, 'permission_denied', 'denied', {
-      path: req.path,
-      method: req.method,
-    });
-    return res.status(403).json({ error: 'Forbidden' });
-  }
-
   const tableStructure = structure.tables[tableName as TableKey];
   const allowedRoles = tableStructure.permissions?.read || [];
 
@@ -551,23 +539,28 @@ async function createEntityWithUser<K extends TableKey>(tableKey: K, req: Reques
 
   // desestructuramos: lo que va en la tabla tableKey y lo que va en la de auth.users
   const {
-    username, 
+    username,
     password,
-    role, 
-    ...entityData} = formData;
+    role,
+    ...entityData } = formData;
 
   if (!password) {
-    return postHandler(req, res, pool);
+    return postHandler(req, res, (req as AuthedRequest).dbClient ?? pool);
   }
 
-  const client = await pool.connect();
+  const typedReq = req as AuthedRequest;
+  // Se reutiliza la conexión del attachDbSession porque ya tiene configuradas las variables de sesión (app.role, etc).
+  // Si abrieramos una conexión nueva con pool.connect(), no tendria esas variables y las políticas RLS rechazarian pedidos validos
+  // (como un admin agregando transporte).
+  const client = typedReq.dbClient || await pool.connect();
+  const shouldRelease = !typedReq.dbClient;
 
   try {
     await client.query('BEGIN');
 
     const { passwordHash, passwordSalt } = await auth.hashPassword(password);
 
-    const columnNames = Object.keys(entityData); 
+    const columnNames = Object.keys(entityData);
     const columnValues = Object.values(entityData);
 
     const [fieldNamesTuple, parametersNumbersTuple] = formatTableColumnsForQuery(columnNames);
@@ -577,7 +570,7 @@ async function createEntityWithUser<K extends TableKey>(tableKey: K, req: Reques
       VALUES ${parametersNumbersTuple}
       RETURNING *
     `, columnValues);
-    
+
     const userResult = await client.query<{ id: number }>(
       `INSERT INTO auth.users
        (username, email, password_hash, password_salt, role, client_cuit, transport_license, must_change_password)
@@ -623,7 +616,9 @@ async function createEntityWithUser<K extends TableKey>(tableKey: K, req: Reques
       error: 'Internal server error',
     });
   } finally {
-    client.release();
+    if (shouldRelease) {
+      client.release();
+    }
   }
 
 }

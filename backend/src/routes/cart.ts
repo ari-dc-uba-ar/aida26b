@@ -149,6 +149,11 @@ export async function checkoutHandler(req: AuthedRequest, res: Response) {
   try {
     await client.query('BEGIN');
 
+    // Elevamos temporalmente el rol a admin para las consultas internas (transporte e items).
+    // El cliente no debería tener acceso directo a esas tablas, pero el servidor sí necesita consultarlas.
+    // SET LOCAL solo aplica dentro de esta transacción.
+    await client.query("SET LOCAL app.role = 'admin'");
+
     const plate_transport = await getRandomTransport(client);
 
     const itemsToReserve: string[] = [];
@@ -160,6 +165,9 @@ export async function checkoutHandler(req: AuthedRequest, res: Response) {
       );
       itemsToReserve.push(...fetchedRandomItems);
     }
+
+    // Restauramos el rol del cliente para que el INSERT de la orden respete las políticas RLS de orders
+    await client.query("SET LOCAL app.role = 'client'");
 
     const orderUUID = generateOrderId();
     const orderDate = new Date().toISOString().split('T')[0];
