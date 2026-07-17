@@ -148,10 +148,11 @@ El proyecto puede ejecutarse completamente mediante Docker Compose (recomendado)
 
 Basta hacer
 
-
 ```bash
 docker-compose -f docker-compose.combined.yml up --build
 ```
+
+desde el directorio raíz.
 
 Tanto el back como el frontend se pueden acceder en `http://localhost:3000` y la base de datos en el puerto `localhost:5432`.
 
