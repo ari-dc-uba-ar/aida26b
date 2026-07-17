@@ -55,7 +55,7 @@ la cantidad de referencias en otras tablas. Podría verse de hacer que puedan an
 - ~toda la lógica de actualización de estado de los drivers habría que llevarla a un endpoint específico sobre el que ellos puedan hacer POST, ahora mismo, a mano, hacen un PUT a la API genérica de transports (no deberían, eso en principio permite modificar a otros drivers también)~
 - ~En muchos lugares se hardcodea el status de los drivers y las órdenes con el string pelado, convendría encapsular eso en una variable o tipo particular para, si decimos agregar estados o algo, no tener que hacer validaciones por doquier (o no comernos la cabeza debuggeando si escribimos mal un string)~
 - en renderAnyForm se podría también extraer la generación de headers dinámicos (o sea, para los buttons particulares, esos ifs hardcodeados), también se podría llevar todas esas funciones a otro dir
-
+- Estamos hardcodeando que los drivers tengan permisos para hacer GET a la api de transports con su placa (necesario para conseguir su estado de disponibilidad y meterlo en el button de actualizar estado). Si en el ssot les damos permiso de read sobre la tabla de transports consiguen el GET, pero eso obliga a que se renderice esa tabla en su view (sin sentido, se va a ver a sí mismo y ya). Podríamos desacoplar en el ssot la lógica de *quién puede renderizar una tabla* de *quién puede hacer peticiones a los endpoints de la API asociada a esa tabla*, porque ahora está más o menos mezclado.
 
 ## Bugs
 
