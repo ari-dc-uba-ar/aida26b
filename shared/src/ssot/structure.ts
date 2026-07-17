@@ -133,7 +133,7 @@ export const structure = {
       addButtonLabel: { es: 'Añadir Transporte', en: 'Add Transport' },
       referencedTables: ['warehouses'],
       permissions: {
-        read: ["admin", "driver"],
+        read: ["admin"],
         create: ["admin"],
         update: ["admin"],
         delete: ["admin"],
@@ -185,6 +185,7 @@ export const structure = {
         email: {
           type: 'string',
           label: { es: 'Email', en: 'Email' },
+          readonlyOnEdit: true,
           input: 'email',
           validator: {
             nullable: true,
@@ -276,7 +277,6 @@ export const structure = {
           input: 'select',
           validator: {
             required: true,
-            // TO DO: hay que poner una validación para que sólo se valgan transportes ready
           },
           foreignKey: {
             table: "transports",

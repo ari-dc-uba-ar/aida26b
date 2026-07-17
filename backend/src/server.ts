@@ -202,6 +202,17 @@ const requireAcademicRead: RequestHandler = async (req, res, next) => {
     return next();
   }
 
+  if (role === 'driver' && tableName === 'transports') {
+    if (user?.transport_license && req.query.license_plate === user.transport_license) {
+      return next();
+    }
+    await audit(req, 'permission_denied', 'denied', {
+      path: req.path,
+      method: req.method,
+    });
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   const tableStructure = structure.tables[tableName as TableKey];
   const allowedRoles = tableStructure.permissions?.read || [];
 
