@@ -1,189 +1,165 @@
-# Sistema de Gestión Académica - Facultad de Ciencias Exactas UBA
+# Sistema de Gestión Logística
 
-Este proyecto implementa un sistema de gestión académica para la Facultad de Ciencias Exactas de la Universidad de Buenos Aires. El sistema permite gestionar alumnos, materias e inscripciones, con el objetivo de automatizar procesos académicos como la identificación de alumnos elegibles para títulos de grado y la generación de certificados.
+Este proyecto implementa un sistema de gestión logística para administrar el stock de productos, pedidos de clientes y entregas realizadas por transportistas.
+
+El sistema fue desarrollado originalmente como un gestor académico genérico, pero evolucionó hacia una plataforma configurable mediante un Single Source of Truth (SSOT) que define la estructura de las entidades, formularios, tablas, validaciones y permisos del sistema.
+
+Actualmente implementa un flujo completo de gestión de pedidos con autenticación, autorización mediante PostgreSQL Row Level Security y una interfaz web dinámica.
 
 ## Características
 
-- **Gestión de Alumnos**: CRUD completo con número de libreta como identificador único
-- **Gestión de Materias**: CRUD con código de materia como identificador
-- **Gestión de Inscripciones**: Relación muchos-a-muchos entre alumnos y materias con clave compuesta
-- **Interfaz Web**: Grillas interactivas con botones de agregar, editar y eliminar
-- **API REST**: Backend en Node.js con TypeScript
-- **Base de Datos**: PostgreSQL
+### Gestión de entidades
 
-## Tecnologías Utilizadas
+El sistema permite administrar:
 
-- **Backend**: Node.js, TypeScript, Express.js
-- **Frontend**: Vanilla TypeScript, HTML5, CSS3
-- **Base de Datos**: PostgreSQL
-- **ORM**: SQL directo con pg library
+- Almacenes
+- Productos (Stocks)
+- Items físicos
+- Clientes
+- Transportistas
+- Pedidos
+- Usuarios de la aplicación
 
-## Estructura del Proyecto
+Todas las entidades utilizan el mismo conjunto de endpoints CRUD genéricos.
 
+### Clientes
+Los clientes autenticados pueden:
+
+- consultar el catálogo de productos disponibles.
+- visualizar el stock existente.
+- agregar productos a un carrito.
+- generar pedidos.
+- consultar únicamente sus propios pedidos.
+- cancelar pedidos mientras permanezcan en estado Preparing (todavía no salieron del almacén donde están)-
+
+### Transportistas
+
+Los transportistas autenticados pueden:
+
+- consultar únicamente los pedidos que les fueron asignados
+- cambiar su estado operativo (Ready ↔ Travelling)
+- marcar pedidos como entregados
+- marcar pedidos cuya entrega no pudo realizarse
+
+El sistema aplica automáticamente las reglas de negocio correspondientes al cambiar el estado del transportista.
+
+### Administradores
+
+Los administradores poseen acceso completo al sistema (son usuarios root, vaya).
+
+Pueden realizar operaciones CRUD sobre todas las entidades y administrar usuarios.
+
+## Características técnicas
+
+### Single Source of Truth
+
+La aplicación está impulsada por una estructura declarativa (structure) que define para cada tabla:
+
+- columnas
+- claves primarias
+- validaciones para los formularios (ej: patrón que debe cumplir una placa de vehículo)
+- tipos de input
+- claves foráneas
+- permisos de visiblidad de tablas
+
+A partir de esta definición se generan automáticamente:
+
+- formularios
+- tablas
+- validaciones
+- filtros
+- ordenamiento
+- operaciones CRUD
+
+### Backend genérico
+
+El backend implementa handlers genéricos para:
+
+GET
+POST
+PUT
+DELETE
+
+sobre cualquier entidad declarada en el SSOT.
+
+Las operaciones específicas de negocio (por ejemplo cancelar un pedido o actualizar el estado de un transportista) se implementan mediante endpoints dedicados.
+
+### Seguridad
+
+El sistema implementa varios niveles de seguridad.
+
+#### Autenticación
+
+Los usuarios se autentican mediante usuario y contraseña.
+
+Las contraseñas se almacenan utilizando hash.
+
+#### Autorización
+
+Cada usuario posee un rol.
+
+Actualmente existen: `admin | editor | reader | client | driver`, siendo los más importantes los de `admin | client | driver` 
+
+Los permisos se controlan tanto en frontend como en backend.
+
+### Row Level Security
+
+Se utilizan policies de PostgreSQL para restringir qué filas puede consultar cada usuario.
+
+Por ejemplo:
+
+- un cliente únicamente puede consultar sus propios pedidos.
+- un transportista únicamente puede consultar los pedidos asignados a sí mismo (su vehículo).
+
+Esto evita exponer información de otros usuarios incluso si se realizan consultas directas contra la API.
+
+### Permisos del frontend
+
+El frontend utiliza el SSOT para determinar qué tablas son visibles para cada rol.
+
+Asimismo, los botones de acción disponibles dependen del rol del usuario y del estado actual de cada registro.
+
+Por ejemplo:
+
+- un cliente sólo puede cancelar pedidos en estado Preparing
+- un transportista sólo puede modificar pedidos en estado Travelling
+
+## Reglas de negocio, funcionalidades específicas y supuestos
+
+### clientes
+
+- Pueden ver el stock disponible de los distintos productos cargados al sistema y agregarlos a un carrito.
+- Una compra sólo se puede realizar si, para cada producto seleccionado, hay en existencia una cantidad mayor o igual a la que se quiere comprar (ej: se pueden comprar 2 teclados sólo si hay, efectivamente, al menos 2 que no fueron ya vendidos).
+- Una compra sólo se puede realizar si, al momento de realizarla, existe al menos un transportista con disponibilidad `ready` (está en un almacén y listo para salir a entregar).
+- Pueden cancelar pedidos que hayan realizado y todavía no estén en proceso de ser entregados (o sea, sólo cancelan los que están en estado `preparing`).
+
+### transportistas
+
+- Sólo pueden ver y modificar el estado de pedidos asignados a sí mismos.
+- Pueden marcarse a sí mismos como `travelling` (entregando pedidos) o `ready` (listo en su almacén).
+- Cuando un transportista comienza a viajar, todos sus pedidos en estado `preparing` pasan a estado `travelling` (se asume reparten todo lo que tienen asignado en el mismo viaje).
+- Cuando un transportista deja de viajar, todos sus pedidos en estado `travelling` pasan a estado `failed` (se asume que si volvieron y no lo entregaron, es porque no estaba el cliente o algo impidió dárselo).
+- Para confirmar la entrega de un pedido, debe ingresar el CUIT del cliente al que se lo está entregando (ya conocen los CUITs, pero esto simula una validación de identidad: para chequear que sos la persona a la que se lo debo entregar, te pido el CUIT y lo ingreso).
+- Un transportista puede marcar manualmente como `failed`, no se pudo entregar, a un pedido (distinto de `cancelled`, que es cuando un client dice que al final no lo quiere).
+
+## Ejecución (Docker)
+
+El proyecto puede ejecutarse completamente mediante Docker Compose (recomendado).
+
+Basta hacer
+
+
+```bash
+docker-compose -f docker-compose.combined.yml up --build
 ```
-/
-├── backend/           # API REST
-│   ├── src/
-│   │   └── server.ts
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── .env
-├── frontend/          # Interfaz web
-│   ├── src/
-│   │   └── app.ts
-│   ├── index.html
-│   ├── package.json
-│   └── tsconfig.json
-├── database/
-│   ├── bootstrap.sql       # Crea roles y base de datos (corre una vez)
-│   └── migrations/         # Migraciones SQL versionadas
-└── README.md
-```
 
-## Instalación y Configuración
+Tanto el back como el frontend se pueden acceder en `http://localhost:3000` y la base de datos en el puerto `localhost:5432`.
 
-### Prerrequisitos
+La inicialización crea:
 
-- Node.js (versión 16 o superior)
-- PostgreSQL (versión 12 o superior)
-- npm o yarn
+- base de datos
+- un usuario `admin`
+- backend
+- frontend
 
-### Base de Datos
-
-1. Setup inicial (una vez por entorno, como superusuario de Postgres):
-   ```
-   psql -U postgres -f database/bootstrap.sql
-   ```
-   Esto crea los roles `aida26_owner` / `aida26_user` y la base `faculty_management`.
-
-2. Aplicar migraciones (desde `backend/`):
-   ```
-   npm run migrate
-   ```
-   Esto crea/actualiza las tablas según los archivos en `database/migrations/`.
-
-   Las migraciones son **forward-only** y nombradas con timestamp
-   (ej. `20260520_120000_initial_schema.sql`). Para cambiar el schema,
-   se agrega una migración nueva — nunca se editan las ya aplicadas.
-
-   **Para deshacer un cambio:** no se edita la migración original — se escribe
-   una migración nueva que aplique el revert. Ej: si
-   `20260601_120000_add_phone.sql` hizo `ALTER TABLE students ADD COLUMN phone`,
-   para sacarla escribimos `20260602_090000_remove_phone.sql` con
-   `ALTER TABLE students DROP COLUMN phone`. Las migraciones aplicadas son
-   inmutables — modificarlas rompe la verificación de checksum.
-
-### Backend
-
-1. Navegar al directorio `backend`
-2. Instalar dependencias: `npm install`
-3. Configurar variables de entorno en `.env`:
-   ```
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_NAME=faculty_management
-   DB_USER=tu_usuario
-   DB_PASSWORD=tu_contraseña
-   PORT=3000
-   ```
-4. Compilar solo backend: `npm run build`
-5. Ejecutar: `npm start` (servirá en http://localhost:3000 y también servirá `frontend/dist`)
-
-### Frontend
-
-1. Navegar al directorio `frontend`
-2. Instalar dependencias: `npm install`
-3. Compilar assets de producción: `npm run build`
-4. Ejecutar el servidor de desarrollo con proxy API: `npm run dev` (servirá en http://localhost:8080)
-
-### Comandos desde la raíz
-
-1. Instalar frontend y backend: `npm run install:all`
-2. Compilar frontend y backend: `npm run build`
-3. Ejecutar backend compilado: `npm start`
-4. Ejecutar backend en desarrollo: `npm run dev:backend`
-5. Ejecutar frontend en desarrollo: `npm run dev:frontend`
-6. Ejecutar tests unitarios frontend+backend: `npm test`
-7. Ejecutar tests de integración con base de datos: `npm run test:db`
-8. Ejecutar tests E2E Playwright: `npm run test:e2e`
-
-## Uso
-
-1. Ejecutar el backend: `npm start` en la raíz o en el directorio backend (servirá en http://localhost:3000)
-2. Abrir el navegador en http://localhost:3000
-3. Navegar entre las secciones de Alumnos, Materias e Inscripciones
-4. Usar los botones "Agregar" para crear nuevos registros
-5. Usar los botones "Editar" y "Eliminar" en cada fila de las grillas
-
-## API Endpoints
-
-### Alumnos
-- `GET /api/students` - Listar todos los alumnos
-- `GET /api/students/:numero_libreta` - Obtener alumno específico
-- `POST /api/students` - Crear nuevo alumno
-- `PUT /api/students/:numero_libreta` - Actualizar alumno
-- `DELETE /api/students/:numero_libreta` - Eliminar alumno
-
-### Materias
-- `GET /api/subjects` - Listar todas las materias
-- `GET /api/subjects/:cod_mat` - Obtener materia específica
-- `POST /api/subjects` - Crear nueva materia
-- `PUT /api/subjects/:cod_mat` - Actualizar materia
-- `DELETE /api/subjects/:cod_mat` - Eliminar materia
-
-### Inscripciones
-- `GET /api/enrollments` - Listar todas las inscripciones
-- `GET /api/enrollments/:numero_libreta/:cod_mat` - Obtener inscripción específica
-- `POST /api/enrollments` - Crear nueva inscripción
-- `PUT /api/enrollments/:numero_libreta/:cod_mat` - Actualizar inscripción
-- `DELETE /api/enrollments/:numero_libreta/:cod_mat` - Eliminar inscripción
-
-## Desarrollo Futuro
-
-- Implementar autenticación y autorización
-- Agregar validaciones más robustas
-- Implementar búsqueda y filtros
-- Generar reportes y estadísticas
-- Automatizar procesos de titulación
-- Generar certificados de alumno regular
-
-## Testing de Paginación (Frontend + TypeScript)
-
-La paginación del frontend usa el parámetro `page` y el backend pagina con un `limit` fijo de **20** registros por página.
-El UI muestra el estado como: `Página X de Y (Total: N)` y ofrece botones `Anterior` / `Siguiente`.
-
-### Prerrequisitos
-
-- Backend y base de datos corriendo (la suite crea y borra registros de `students` vía API)
-- Frontend servido en el mismo host/puerto que el backend (por defecto `http://localhost:3000`)
-- Node.js 18+
-
-### Ejecutar los tests
-
-1. Instalar dependencias del frontend:
-   - `cd frontend`
-   - `npm install`
-   - `npx playwright install`
-2. (Opcional) Configurar URL base (por defecto `http://localhost:3000`):
-   - `set E2E_BASE_URL=http://localhost:3000`
-3. Ejecutar (desde `frontend/`):
-   - `npm run test:e2e`
-
-Por defecto corre en modo headless. Para ver el navegador:
-
-- `set E2E_HEADLESS=0`
-
-### Casos cubiertos
-
-- Contenido menor a una página (ej: 5 items → 1/1)
-- Contenido exactamente una página (20 items → 1/1)
-- Contenido mayor a una página (21 items → 1/2, navegación prev/next)
-- Muchas páginas (85 items → 1/5 ... 5/5)
-
-## Contribución
-
-Este proyecto es parte del sistema académico de la Facultad de Ciencias Exactas. Para contribuciones, por favor contactar al equipo de desarrollo.
-
-## Licencia
-
-Este proyecto es propiedad de la Universidad de Buenos Aires - Facultad de Ciencias Exactas.
+Las migraciones se aplican automáticamente durante el arranque.
