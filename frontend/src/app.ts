@@ -105,7 +105,7 @@ const changeDriverStatusBtn = document.getElementById("change-driver-status-btn"
 
 let currentUser: AuthUser | null = null;
 
-function canWriteAcademic(): boolean {
+function canWriteLogistic(): boolean {
   return currentUser?.role === 'admin' || currentUser?.role === 'editor';
 }
 
@@ -634,7 +634,7 @@ function showSection(section: TableKey, pushState = true): void {
     getLocalizedText(tableConfig.addButtonLabel) ||
     `${getLocalizedText(structure.commonText.add)} ${getLocalizedText(tableConfig.uiName)}`;
 
-  addRecordBtn.style.display = canWriteAcademic() ? 'inline-block' : 'none';
+  addRecordBtn.style.display = canWriteLogistic() ? 'inline-block' : 'none';
 
   if (adminActions) {
     adminActions.hidden = currentUser?.role !== 'admin' || section !== 'clients';
@@ -920,7 +920,7 @@ function createAdminActions<K extends TableKey>(
   pkValues: string[],
 ): HTMLTableCellElement | null {
 
-  if (!canWriteAcademic())
+  if (!canWriteLogistic())
     return null;
 
   const td = document.createElement("td");
@@ -1119,7 +1119,7 @@ function renderAnyTable<K extends TableKey>(
   const thead = sharedTable.querySelector('thead')!;
   const tbody = sharedTable.querySelector('tbody')!;
   const tableStructure = structure.tables[tableKey] as TableStructure;
-  const showActions = canWriteAcademic();
+  const showActions = canWriteLogistic();
   const isStocksTable = tableKey === 'stocks';
   const showOrdersStatusActions = tableKey === 'orders' && currentUser!.role == "driver";
 
@@ -2047,7 +2047,7 @@ async function showAnyForm<K extends TableKey>(
   tableKey: K,
   record?: Partial<TableRecordMap[K]>
 ): Promise<void> {
-  if (!canWriteAcademic()) {
+  if (!canWriteLogistic()) {
     setMessage(getLocalizedText(structure.commonText.noEditPermission));
     return;
   }

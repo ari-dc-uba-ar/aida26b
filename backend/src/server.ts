@@ -149,7 +149,7 @@ const requireAdmin: RequestHandler = async (req, res, next) => {
   return res.status(403).json({ error: 'Forbidden' });
 };
 
-const requireAcademicWrite: RequestHandler = async (req, res, next) => {
+const requireLogisticWrite: RequestHandler = async (req, res, next) => {
   const user = (req as AuthedRequest).user;
   const role = user?.role;
   // Si la ruta es específica (ej. /api/orders), req.params.tableName es undefined y se obtiene del path
@@ -192,7 +192,7 @@ const requireAcademicWrite: RequestHandler = async (req, res, next) => {
   return res.status(403).json({ error: 'Forbidden' });
 };
 
-const requireAcademicRead: RequestHandler = async (req, res, next) => {
+const requireLogisticRead: RequestHandler = async (req, res, next) => {
   const user = (req as AuthedRequest).user;
   const role = user?.role;
   // Si la ruta es específica (ej. /api/orders), req.params.tableName es undefined y se obtiene del path
@@ -664,13 +664,13 @@ app.post(
   }
 );
 
-// Generic academic API routes
+// Generic API routes
 app.get(
   '/api/:tableName',
   requireAuth,
   requirePasswordReady,
   attachDbSession,
-  requireAcademicRead,
+  requireLogisticRead,
   async (req: AuthedRequest, res) => {
     return getHandler(req, res, req.dbClient ?? pool);
   }
@@ -681,7 +681,7 @@ app.post(
   requireAuth,
   requirePasswordReady,
   attachDbSession,
-  requireAcademicWrite,
+  requireLogisticWrite,
   async (req: AuthedRequest, res) => {
     if (req.params.tableName === 'clients') {
       return createEntityWithUser("clients", req, res);
@@ -698,7 +698,7 @@ app.put(
   requireAuth,
   requirePasswordReady,
   attachDbSession,
-  requireAcademicWrite,
+  requireLogisticWrite,
   async (req: AuthedRequest, res) => {
     return updateOrderHandler(req, res, req.dbClient ?? pool);
   }
@@ -709,7 +709,7 @@ app.put(
   requireAuth,
   requirePasswordReady,
   attachDbSession,
-  requireAcademicWrite,
+  requireLogisticWrite,
   async (req: AuthedRequest, res) => {
     return putHandler(req, res, req.dbClient ?? pool);
   }
@@ -720,7 +720,7 @@ app.delete(
   requireAuth,
   requirePasswordReady,
   attachDbSession,
-  requireAcademicWrite,
+  requireLogisticWrite,
   async (req: AuthedRequest, res) => {
     return deleteHandler(req, res, req.dbClient ?? pool);
   }

@@ -444,8 +444,8 @@ export const structure = {
     actions: { es: 'Acciones', en: 'Actions' },
     add: { es: 'Agregar', en: 'Add' },
     appTitle: {
-      es: 'Sistema de Gestión Académica',
-      en: 'Academic Management System',
+      es: 'Sistema de Gestión Logística',
+      en: 'Logistic Management System',
     },
     cancel: { es: 'Cancelar', en: 'Cancel' },
     delete: { es: 'Eliminar', en: 'Delete' },
