@@ -142,6 +142,11 @@ Por ejemplo:
 - Para confirmar la entrega de un pedido, debe ingresar el CUIT del cliente al que se lo está entregando (ya conocen los CUITs, pero esto simula una validación de identidad: para chequear que sos la persona a la que se lo debo entregar, te pido el CUIT y lo ingreso).
 - Un transportista puede marcar manualmente como `failed`, no se pudo entregar, a un pedido (distinto de `cancelled`, que es cuando un client dice que al final no lo quiere).
 
+### pedidos e items
+
+- Cuando un pedido se cancela, los items asociados al mismo (con ese pedido por foreign key) se liberan (o sea, pasan a no tener pedido asociado)
+- Cuando un pedido se marca como fallido (no se pudo entregar), no se hace eso. Si se los quiere liberar o entregar en otro momento, el admin manualmente debe cambiar su estado a `preparing` u otra cosa.
+
 ## Ejecución (Docker)
 
 El proyecto puede ejecutarse completamente mediante Docker Compose (recomendado).
