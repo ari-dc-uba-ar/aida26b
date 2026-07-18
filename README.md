@@ -169,3 +169,12 @@ La inicialización crea:
 Tanto el back como el frontend se pueden acceder en `http://localhost:3000` y la base de datos en el puerto `localhost:5432`.
 
 Las migraciones se aplican automáticamente durante el arranque.
+
+
+## Trabajo futuro
+
+Cosas que podrían agregarse/cambiarse a partir de lo que ya tenemos
+
+- Para cada pedido, meter un dropdown que permita ver exactamente los items que se asignaron (y no tener que ir a la tabla de Items a filtrar por el código de pedido)
+- Generar gráficos para las entregas (que se marquen con puntos de latitud/longitud dónde están los almacenes, dónde los pedidos y que, en particular, los transportistas vean sólo su almacén y sus pedidos que deben entregar)
+- Testing
