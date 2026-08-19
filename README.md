@@ -180,5 +180,5 @@ Cosas que podrían agregarse/cambiarse a partir de lo que ya tenemos
 - Testing
 
 ## Emails
-Axel Maldonado - axeldz0512@gmail.com
-Martín Francisco, Calsina Limachi - martincalsina05@gmail.com
+- Axel Maldonado - axeldz0512@gmail.com
+- Martín Francisco, Calsina Limach - martincalsina05@gmail.com
