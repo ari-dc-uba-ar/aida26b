@@ -178,3 +178,7 @@ Cosas que podrían agregarse/cambiarse a partir de lo que ya tenemos
 - Para cada pedido, meter un dropdown que permita ver exactamente los items que se asignaron (y no tener que ir a la tabla de Items a filtrar por el código de pedido)
 - Generar gráficos para las entregas (que se marquen con puntos de latitud/longitud dónde están los almacenes, dónde los pedidos y que, en particular, los transportistas vean sólo su almacén y sus pedidos que deben entregar)
 - Testing
+
+## Emails
+Axel Maldonado - axeldz0512@gmail.com
+Martín Francisco, Calsina Limachi - martincalsina05@gmail.com
