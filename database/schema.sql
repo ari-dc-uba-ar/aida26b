@@ -2,13 +2,13 @@
 -- Code and comments in English, documentation in Spanish
 
 CREATE USER aida26_owner;
-CREATE USER aida26_admin LOGIN 'CambiaEsta!';
+CREATE USER aida26_user password 'CambiaEsta!';
 
--- Create database
+-- SI SE CREÓ ANTES, COMENTARLO:
 CREATE DATABASE faculty_management;
 alter database faculty_management owner to aida26_owner;
 
--- Use the database
+-- ESTO HAY QUE SACARLO EN pgADMIN:
 \c faculty_management;
 set role to aida26_owner;
 GRANT connect on database faculty_management to aida26_user;
